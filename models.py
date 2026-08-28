@@ -41,3 +41,11 @@ class Student(db.Model):
     def get_reams_owed(self):
         statuses = self.get_term_statuses()
         return sum(1 for status in statuses.values() if status == 'Pending')
+
+class StaffUser(db.Model):
+    __tablename__ = 'staff_user'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    full_name = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(30), nullable=False)  # 'HOI', 'Ream Collection', 'Examination'
