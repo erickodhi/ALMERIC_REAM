@@ -31,6 +31,10 @@
             <button onclick="openModal('bulkModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
                 <span class="mr-3">📁</span> Bulk Upload (CSV)
             </button>
+
+            <button onclick="openModal('promoteModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition text-emerald-400">
+                <span class="mr-3">🔄</span> Promote Students
+            </button>
         </nav>
 
         <div class="px-6 py-4 border-t border-slate-800 text-xs text-slate-500">
@@ -63,14 +67,27 @@
 
             <!-- Enrolled Students Table -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50 flex-wrap gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-gray-800">Enrolled Students Records</h2>
                         <p class="text-xs text-gray-500 mt-0.5">Horizontal status view for ream tracking across terms</p>
                     </div>
-                    <button onclick="openModal('enrollModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                        + Add New Student
-                    </button>
+                    
+                    <div class="flex items-center space-x-3">
+                        <!-- Year Filter Dropdown -->
+                        <form method="GET" action="{{ url_for('admin_dashboard') }}" class="flex items-center space-x-2">
+                            <label class="text-xs font-semibold text-gray-600 uppercase">Year:</label>
+                            <select name="year" onchange="this.form.submit()" class="px-3 py-1.5 border rounded-lg border-gray-300 text-sm bg-white font-medium text-gray-800">
+                                {% for y in available_years %}
+                                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+
+                        <button onclick="openModal('enrollModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                            + Add New Student
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -128,8 +145,8 @@
                             {% else %}
                             <tr>
                                 <td colspan="10" class="py-12 text-center text-gray-400">
-                                    <p class="text-base font-medium">No students registered yet.</p>
-                                    <p class="text-xs mt-1">Use the sidebar or button above to enroll students.</p>
+                                    <p class="text-base font-medium">No students registered for year {{ selected_year }}.</p>
+                                    <p class="text-xs mt-1">Use the sidebar or button above to enroll students or switch year filter.</p>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -197,7 +214,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Year</label>
-                        <input type="text" name="year" value="2026" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm text-center">
+                        <input type="text" name="year" value="{{ selected_year }}" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm text-center">
                     </div>
                 </div>
                 <div class="flex space-x-3">
@@ -258,7 +275,6 @@
                     <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Upload Filled CSV File</label>
                     <input type="file" name="csv_file" accept=".csv" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-gray-50">
                 </div>
-                
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
                     Upload & Import Students
                 </button>
@@ -266,9 +282,32 @@
         </div>
     </div>
 
+    <!-- 4. Promote Students Modal -->
+    <div id="promoteModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100">
+            <button onclick="closeModal('promoteModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Promote Students to Next Year</h3>
+            <p class="text-xs text-gray-500 mb-4">Past records remain safely archived. Promoted students advance to the next form/grade with fresh pending terms.</p>
+            
+            <form action="{{ url_for('promote_students') }}" method="POST">
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Source Academic Year</label>
+                    <input type="text" name="source_year" value="{{ selected_year }}" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-gray-50">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Target Academic Year</label>
+                    <input type="text" name="target_year" value="2027" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeModal('promoteModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition">Cancel</button>
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm">Confirm Promotion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Embedded Mapping Data for JavaScript Dropdown Sync -->
     <script>
-        // Map forms to their created streams safely handling multiple possible attribute naming conventions
         const formStreamsData = {
             {% for form in forms %}
                 "{{ form.name }}": [
@@ -279,15 +318,11 @@
             {% endfor %}
         };
 
-        // Debug helper: Check browser F12 Console tab to verify stream mapping
-        console.log("Loaded Form Streams Mapping:", formStreamsData);
-
         function updateStreamDropdown() {
             const formSelect = document.getElementById('enrollFormSelect');
             const streamSelect = document.getElementById('enrollStreamSelect');
             const selectedForm = formSelect.value;
 
-            // Clear current options
             streamSelect.innerHTML = '<option value="" disabled selected>Select Stream</option>';
 
             if (selectedForm && formStreamsData[selectedForm]) {
