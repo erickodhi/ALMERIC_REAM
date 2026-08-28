@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff & Role Accounts - ALMERIC REAM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900 flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
+        <div class="px-6 py-6 border-b border-slate-800">
+            <h2 class="text-xl font-bold text-white tracking-wider">ALMERIC REAM</h2>
+            <p class="text-xs text-slate-400 mt-1">Management System</p>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="{{ url_for('admin_dashboard') }}" class="flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <span class="mr-3">📊</span> Dashboard / Students
+            </a>
+
+            <a href="{{ url_for('manage_staff') }}" class="flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium transition">
+                <span class="mr-3">👥</span> Staff & Role Accounts
+            </a>
+        </nav>
+
+        <div class="px-6 py-4 border-t border-slate-800 text-xs text-slate-500">
+            Admin Portal v1.0
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header class="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Staff & Role Accounts</h1>
+            <div class="flex items-center space-x-3">
+                <span class="text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">Administrator</span>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-7xl mx-auto w-full">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-6 p-4 rounded-lg text-white font-medium shadow-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Create Staff Form -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">Create Staff Account</h2>
+                    <form action="{{ url_for('manage_staff') }}" method="POST">
+                        <input type="hidden" name="action" value="add_staff">
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Username</label>
+                            <input type="text" name="username" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Password</label>
+                            <input type="password" name="password" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Role / Department</label>
+                            <select name="role" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-white">
+                                <option value="" disabled selected>Select Role</option>
+                                <option value="Head of Institution">Head of Institution</option>
+                                <option value="Ream Collection Desk">Ream Collection Desk</option>
+                                <option value="Examination Office">Examination Office</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                            Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Staff Accounts Table -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+                        <h2 class="text-lg font-bold text-gray-800">Existing Staff Accounts</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Manage permissions and credentials for administrative staff</p>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100/70 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+                                    <th class="py-3 px-4 border-b">Username</th>
+                                    <th class="py-3 px-4 border-b">Role / Department</th>
+                                    <th class="py-3 px-4 border-b">Created Date</th>
+                                    <th class="py-3 px-4 border-b text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-gray-200">
+                                {% for staff in staff_members %}
+                                <tr class="hover:bg-gray-50/80 transition">
+                                    <td class="py-3 px-4 font-semibold text-gray-900">{{ staff.username }}</td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            {{ staff.role }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-slate-500">{{ staff.created_at.strftime('%Y-%m-%d') if staff.created_at else '-' }}</td>
+                                    <td class="py-3 px-4 text-center">
+                                        <form action="{{ url_for('manage_staff') }}" method="POST" onsubmit="return confirm('Delete account for {{ staff.username }}?');" class="inline">
+                                            <input type="hidden" name="action" value="delete_staff">
+                                            <input type="hidden" name="staff_id" value="{{ staff.id }}">
+                                            <button type="submit" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="py-12 text-center text-gray-400">
+                                        <p class="text-base font-medium">No staff accounts created yet.</p>
+                                        <p class="text-xs mt-1">Use the form on the left to add your first staff account.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>

@@ -288,6 +288,39 @@ def delete_staff(staff_id):
     flash('Staff account deleted successfully.', 'success')
     return redirect(url_for('manage_staff'))
 
+@app.route('/admin/staff', methods=['GET', 'POST'])
+def manage_staff():
+    # Make sure to protect this route with an admin check if you have session tracking set up
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add_staff':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            role = request.form.get('role')
+            
+            existing = StaffUser.query.filter_by(username=username).first()
+            if existing:
+                flash('Username already exists. Choose a different one.', 'danger')
+            else:
+                new_staff = StaffUser(username=username, password=password, role=role)
+                db.session.add(new_staff)
+                db.session.commit()
+                flash('Staff account created successfully!', 'success')
+                
+        elif action == 'delete_staff':
+            staff_id = request.form.get('staff_id')
+            staff_member = StaffUser.query.get_or_404(staff_id)
+            db.session.delete(staff_member)
+            db.session.commit()
+            flash('Staff account deleted successfully.', 'success')
+            
+        return redirect(url_for('manage_staff'))
+
+    staff_members = StaffUser.query.all()
+    return render_template('manage_staff.html', staff_members=staff_members)
+    
+
 @app.route('/')
 def index():
     return redirect(url_for('admin_dashboard'))
