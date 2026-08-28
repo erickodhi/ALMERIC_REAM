@@ -27,22 +27,17 @@ with app.app_context():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
-    # ... your existing POST handling code (add_form, add_stream, etc.) ...
+    # ... your existing POST handling logic (add_form, add_stream, enroll_student, etc.) ...
 
-    # Explicitly query forms and attach their streams as a clean list of dictionaries or names
-    forms_list = []
-    for f in Form.query.all():
-        # Get all streams associated with this form
-        form_streams = Stream.query.filter_by(form_id=f.id).all()
-        forms_list.append({
-            'id': f.id,
-            'name': f.name,
-            'streams': [{'name': s.name if hasattr(s, 'name') else s.stream_name} for s in form_streams]
-        })
-
+    forms = Form.query.all()
     students = Student.query.all()
-    return render_template('admin.html', forms=forms_list, students=students)
+    
+    # Ensure streams are explicitly queried/loaded for each form object
+    for form in forms:
+        if not hasattr(form, 'streams') or not form.streams:
+            form.streams = Stream.query.filter_by(form_id=form.id).all()
 
+    return render_template('admin.html', forms=forms, students=students)
 
 @app.route('/admin/delete_student/<int:student_id>', methods=['POST'])
 def delete_student(student_id):
