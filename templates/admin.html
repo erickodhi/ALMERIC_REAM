@@ -267,16 +267,19 @@
 
     <!-- Embedded Mapping Data for JavaScript Dropdown Sync -->
     <script>
-        // Map forms to their created streams using your backend data safely
+        // Map forms to their created streams safely handling multiple possible attribute naming conventions
         const formStreamsData = {
             {% for form in forms %}
                 "{{ form.name }}": [
                     {% for stream in form.streams %}
-                        "{{ stream.name }}"{% if not loop.last %},{% endif %}
+                        "{{ stream.name if stream.name is defined and stream.name else stream.stream_name }}"{% if not loop.last %},{% endif %}
                     {% endfor %}
                 ]{% if not loop.last %},{% endif %}
             {% endfor %}
         };
+
+        // Debug helper: Check browser F12 Console tab to verify stream mapping
+        console.log("Loaded Form Streams Mapping:", formStreamsData);
 
         function updateStreamDropdown() {
             const formSelect = document.getElementById('enrollFormSelect');
