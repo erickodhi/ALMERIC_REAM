@@ -11,6 +11,7 @@ from flask import (
     url_for,
 )
 from models import Form, Student, Stream, db
+from models import StaffUser  # Ensure StaffUser is imported at the top with your other models
 
 app = Flask(__name__)
 
@@ -239,6 +240,53 @@ def download_template():
         },
     )
 
+@app.route('/admin/staff', methods=['GET', 'POST'])
+def manage_staff():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'create_staff':
+            username = request.form.get('username').strip()
+            full_name = request.form.get('full_name').strip()
+            password = request.form.get('password').strip()
+            role = request.form.get('role').strip()
+
+            existing = StaffUser.query.filter_by(username=username).first()
+            if existing:
+                flash(f'Username "{username}" is already taken.', 'danger')
+            else:
+                new_staff = StaffUser(
+                    username=username,
+                    full_name=full_name,
+                    password=password,
+                    role=role
+                )
+                db.session.add(new_staff)
+                db.session.commit()
+                flash(f'Account for {full_name} ({role}) created successfully!', 'success')
+            return redirect(url_for('manage_staff'))
+
+        elif action == 'reset_password':
+            staff_id = request.form.get('staff_id')
+            new_password = request.form.get('new_password').strip()
+            
+            staff = StaffUser.query.get_or_404(staff_id)
+            staff.password = new_password
+            db.session.commit()
+            flash(f'Password for {staff.full_name} reset successfully!', 'success')
+            return redirect(url_for('manage_staff'))
+
+    staff_members = StaffUser.query.all()
+    return render_template('manage_staff.html', staff_members=staff_members)
+
+
+@app.route('/admin/staff/delete/<int:staff_id>', methods=['POST'])
+def delete_staff(staff_id):
+    staff = StaffUser.query.get_or_404(staff_id)
+    db.session.delete(staff)
+    db.session.commit()
+    flash('Staff account deleted successfully.', 'success')
+    return redirect(url_for('manage_staff'))
 
 @app.route('/')
 def index():
