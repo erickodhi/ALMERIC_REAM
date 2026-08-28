@@ -49,3 +49,14 @@ class StaffUser(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(30), nullable=False)  # 'HOI', 'Ream Collection', 'Examination'
+
+class ReamRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    term = db.Column(db.String(20), nullable=False)      # e.g., 'Term 1'
+    year = db.Column(db.String(10), nullable=False)      # e.g., '2026'
+    reams_count = db.Column(db.Integer, nullable=False, default=1)
+    date_collected = db.Column(db.DateTime, default=db.func.current_timestamp())
+    received_by = db.Column(db.String(100), nullable=False) # Staff username
+
+    student = db.relationship('Student', backref=db.backref('ream_records', lazy=True))
