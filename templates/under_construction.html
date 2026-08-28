@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Under Construction - ALMERIC REAM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
+        <div class="px-6 py-6 border-b border-slate-800">
+            <h2 class="text-xl font-bold text-white tracking-wider">ALMERIC REAM</h2>
+            <p class="text-xs text-slate-400 mt-1">{{ role }} Portal</p>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="#" class="flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium transition">
+                <span class="mr-3">🚧</span> Dashboard
+            </a>
+        </nav>
+
+        <div class="px-6 py-4 border-t border-slate-800">
+            <p class="text-xs text-slate-400 mb-2 truncate">Logged in as: <strong class="text-white">{{ username }}</strong></p>
+            <a href="{{ url_for('logout') }}" class="block text-center bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg text-xs font-medium transition">
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto items-center justify-center p-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 max-w-lg w-full p-10 text-center">
+            <div class="text-5xl mb-4">🏗️</div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Module Under Construction</h1>
+            <p class="text-sm text-gray-500 mb-6">
+                The workspace for <span class="font-semibold text-indigo-600">{{ role }}</span> is currently being developed under the Almeric Ream Management System. Check back soon for updates!
+            </p>
+            <a href="{{ url_for('logout') }}" class="inline-block bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                Sign Out
+            </a>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -9,6 +9,7 @@ from flask import (
     render_template,
     request,
     url_for,
+    session,
 )
 from models import Form, Student, Stream, db
 from models import StaffUser  # Ensure StaffUser is imported at the top with your other models
@@ -303,6 +304,83 @@ def delete_staff(staff_id):
     db.session.commit()
     flash('Staff account deleted successfully.', 'success')
     return redirect(url_for('manage_staff'))
+
+
+# ==========================================
+# STAFF LOGIN & PORTAL ROUTES
+# ==========================================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username:
+            username = username.strip()
+        if password:
+            password = password.strip()
+            
+        staff = StaffUser.query.filter_by(username=username, password=password).first()
+        if staff:
+            session['user_id'] = staff.id
+            session['username'] = staff.username
+            session['role'] = staff.role
+            flash(f'Logged in successfully as {staff.role}', 'success')
+            
+            # Smart role-based redirection to their specific under-construction page
+            role_str = staff.role.lower()
+            if 'head' in role_str or 'hoi' in role_str:
+                return redirect(url_for('hoi_dashboard'))
+            elif 'ream' in role_str or 'collection' in role_str:
+                return redirect(url_for('ream_dashboard'))
+            elif 'exam' in role_str:
+                return redirect(url_for('exam_dashboard'))
+            else:
+                return redirect(url_for('staff_portal'))
+        else:
+            flash('Invalid username or password.', 'danger')
+            
+    return render_template('login.html')
+
+
+@app.route('/portal/hoi')
+def hoi_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('under_construction.html', role="Head of Institution (HOI)", username=session.get('username'))
+
+
+@app.route('/portal/ream')
+def ream_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('under_construction.html', role="Ream Collection Desk", username=session.get('username'))
+
+
+@app.route('/portal/exam')
+def exam_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('under_construction.html', role="Examination Office", username=session.get('username'))
+
+
+@app.route('/portal')
+def staff_portal():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('under_construction.html', role=session.get('role'), username=session.get('username'))
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
 
 
 @app.route('/')
