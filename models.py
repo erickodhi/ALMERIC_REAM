@@ -17,13 +17,17 @@ class Stream(db.Model):
 class Student(db.Model):
     __tablename__ = 'student'
     id = db.Column(db.Integer, primary_key=True)
-    adm_no = db.Column(db.String(50), unique=True, nullable=False)
+    adm_no = db.Column(db.String(50), nullable=False)  # Removed unique=True here
     full_name = db.Column(db.String(100), nullable=False)
     form = db.Column(db.String(50), nullable=False)
     stream = db.Column(db.String(50), nullable=False)
     gender = db.Column(db.String(20), nullable=False)
-    enrollment_term = db.Column(db.String(20), nullable=False)  # 'Term 1', 'Term 2', or 'Term 3'
+    enrollment_term = db.Column(db.String(20), nullable=False)
     year = db.Column(db.String(10), nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('adm_no', 'year', name='uq_adm_year'),
+    )
 
     def get_term_statuses(self):
         term = self.enrollment_term
@@ -32,10 +36,8 @@ class Student(db.Model):
         elif term == 'Term 3':
             return {'t1': 'Exempted', 't2': 'Exempted', 't3': 'Pending'}
         else:
-            # Enrolled in Term 1
             return {'t1': 'Pending', 't2': 'Pending', 't3': 'Pending'}
 
     def get_reams_owed(self):
         statuses = self.get_term_statuses()
-        # Each pending term requires 1 ream
         return sum(1 for status in statuses.values() if status == 'Pending')
