@@ -159,16 +159,26 @@
                     <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Full Name</label>
                     <input type="text" name="full_name" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
+                
+                <!-- Dynamic Form & Stream Dropdowns -->
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Form / Grade</label>
-                        <input type="text" name="form" placeholder="e.g. Form 1" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                        <select name="form" id="enrollFormSelect" onchange="updateStreamDropdown()" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-white">
+                            <option value="" disabled selected>Select Form</option>
+                            {% for form in forms %}
+                                <option value="{{ form.name }}">{{ form.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Stream</label>
-                        <input type="text" name="stream" placeholder="e.g. East" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                        <select name="stream" id="enrollStreamSelect" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-white">
+                            <option value="" disabled selected>Select Stream</option>
+                        </select>
                     </div>
                 </div>
+
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Gender</label>
@@ -255,7 +265,38 @@
         </div>
     </div>
 
+    <!-- Embedded Mapping Data for JavaScript Dropdown Sync -->
     <script>
+        // Map forms to their created streams using your backend data safely
+        const formStreamsData = {
+            {% for form in forms %}
+                "{{ form.name }}": [
+                    {% for stream in form.streams %}
+                        "{{ stream.name }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function updateStreamDropdown() {
+            const formSelect = document.getElementById('enrollFormSelect');
+            const streamSelect = document.getElementById('enrollStreamSelect');
+            const selectedForm = formSelect.value;
+
+            // Clear current options
+            streamSelect.innerHTML = '<option value="" disabled selected>Select Stream</option>';
+
+            if (selectedForm && formStreamsData[selectedForm]) {
+                const streams = formStreamsData[selectedForm];
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream;
+                    option.textContent = stream;
+                    streamSelect.appendChild(option);
+                });
+            }
+        }
+
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
