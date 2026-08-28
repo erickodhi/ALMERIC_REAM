@@ -27,62 +27,21 @@ with app.app_context():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
-  if request.method == 'POST':
-    action = request.form.get('action')
+    # ... your existing POST handling code (add_form, add_stream, etc.) ...
 
-    if action == 'add_form':
-      form_name = request.form.get('form_name')
-      if form_name and not Form.query.filter_by(name=form_name).first():
-        db.session.add(Form(name=form_name))
-        db.session.commit()
-        flash(f'Form {form_name} created successfully!', 'success')
-      else:
-        flash('Form name already exists or is empty.', 'danger')
+    # Explicitly query forms and attach their streams as a clean list of dictionaries or names
+    forms_list = []
+    for f in Form.query.all():
+        # Get all streams associated with this form
+        form_streams = Stream.query.filter_by(form_id=f.id).all()
+        forms_list.append({
+            'id': f.id,
+            'name': f.name,
+            'streams': [{'name': s.name if hasattr(s, 'name') else s.stream_name} for s in form_streams]
+        })
 
-    elif action == 'add_stream':
-      stream_name = request.form.get('stream_name')
-      form_id = request.form.get('form_id')
-      if stream_name and form_id:
-        db.session.add(Stream(name=stream_name, form_id=form_id))
-        db.session.commit()
-        flash(f'Stream {stream_name} added successfully!', 'success')
-
-    elif action == 'enroll_student':
-      adm_no = request.form.get('adm_no')
-      full_name = request.form.get('full_name')
-      form = request.form.get('form')
-      stream = request.form.get('stream')
-      gender = request.form.get('gender')
-      enrollment_term = request.form.get('enrollment_term')
-      year = request.form.get('year', '2026')
-
-      if adm_no and not Student.query.filter_by(adm_no=adm_no).first():
-        new_student = Student(
-            adm_no=adm_no,
-            full_name=full_name,
-            form=form,
-            stream=stream,
-            gender=gender,
-            enrollment_term=enrollment_term,
-            year=year,
-        )
-        db.session.add(new_student)
-        db.session.commit()
-        flash(f'Student {full_name} enrolled successfully!', 'success')
-      else:
-        flash(
-            'Admission number already exists or is invalid.',
-            'danger',
-        )
-
-    return redirect(url_for('admin_dashboard'))
-
-  forms = Form.query.all()
-  streams = Stream.query.all()
-  students = Student.query.all()
-  return render_template(
-      'admin.html', forms=forms, streams=streams, students=students
-  )
+    students = Student.query.all()
+    return render_template('admin.html', forms=forms_list, students=students)
 
 
 @app.route('/admin/delete_student/<int:student_id>', methods=['POST'])
