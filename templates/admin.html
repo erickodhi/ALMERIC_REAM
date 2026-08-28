@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ALMERIC REAM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900 flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
+        <div class="px-6 py-6 border-b border-slate-800">
+            <h2 class="text-xl font-bold text-white tracking-wider">ALMERIC REAM</h2>
+            <p class="text-xs text-slate-400 mt-1">Management System</p>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="{{ url_for('admin_dashboard') }}" class="flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium transition">
+                <span class="mr-3">📊</span> Dashboard / Students
+            </a>
+            
+            <button onclick="openModal('enrollModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <span class="mr-3">➕</span> Enroll Student
+            </button>
+            
+            <button onclick="openModal('classModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <span class="mr-3">🏫</span> Create Form & Stream
+            </button>
+
+            <button onclick="openModal('bulkModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                <span class="mr-3">📁</span> Bulk Upload (CSV)
+            </button>
+        </nav>
+
+        <div class="px-6 py-4 border-t border-slate-800 text-xs text-slate-500">
+            Admin Portal v1.0
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        
+        <header class="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Student Management Ledger</h1>
+            <div class="flex items-center space-x-3">
+                <span class="text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">Administrator</span>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-7xl mx-auto w-full">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-6 p-4 rounded-lg text-white font-medium shadow-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Enrolled Students Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Enrolled Students Records</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Horizontal status view for ream tracking across terms</p>
+                    </div>
+                    <button onclick="openModal('enrollModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                        + Add New Student
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100/70 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-4 border-b">Admission Number</th>
+                                <th class="py-3 px-4 border-b">Full Name</th>
+                                <th class="py-3 px-4 border-b">Form/Grade</th>
+                                <th class="py-3 px-4 border-b">Stream</th>
+                                <th class="py-3 px-4 border-b">Year</th>
+                                <th class="py-3 px-4 border-b text-center">Term 1</th>
+                                <th class="py-3 px-4 border-b text-center">Term 2</th>
+                                <th class="py-3 px-4 border-b text-center">Term 3</th>
+                                <th class="py-3 px-4 border-b text-center">Reams Owed</th>
+                                <th class="py-3 px-4 border-b text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-200">
+                            {% for student in students %}
+                            {% set statuses = student.get_term_statuses() %}
+                            <tr class="hover:bg-gray-50/80 transition">
+                                <td class="py-3 px-4 font-semibold text-gray-900">{{ student.adm_no }}</td>
+                                <td class="py-3 px-4">{{ student.full_name }}</td>
+                                <td class="py-3 px-4">{{ student.form }}</td>
+                                <td class="py-3 px-4">{{ student.stream }}</td>
+                                <td class="py-3 px-4 font-medium text-slate-600">{{ student.year }}</td>
+                                
+                                <td class="py-3 px-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if statuses.t1 == 'Exempted' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                                        {{ statuses.t1 }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if statuses.t2 == 'Exempted' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                                        {{ statuses.t2 }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if statuses.t3 == 'Exempted' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                                        {{ statuses.t3 }}
+                                    </span>
+                                </td>
+
+                                <td class="py-3 px-4 text-center font-bold text-indigo-600">
+                                    {{ student.get_reams_owed() }} Reams
+                                </td>
+
+                                <td class="py-3 px-4 text-center">
+                                    <form action="{{ url_for('delete_student', student_id=student.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete student {{ student.full_name }}?');" class="inline">
+                                        <button type="submit" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="10" class="py-12 text-center text-gray-400">
+                                    <p class="text-base font-medium">No students registered yet.</p>
+                                    <p class="text-xs mt-1">Use the sidebar or button above to enroll students.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. Enroll Student Modal -->
+    <div id="enrollModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100">
+            <button onclick="closeModal('enrollModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Enroll Student</h3>
+            
+            <form method="POST">
+                <input type="hidden" name="action" value="enroll_student">
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Admission Number</label>
+                    <input type="text" name="adm_no" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Full Name</label>
+                    <input type="text" name="full_name" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Form / Grade</label>
+                        <input type="text" name="form" placeholder="e.g. Form 1" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Stream</label>
+                        <input type="text" name="stream" placeholder="e.g. East" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Gender</label>
+                        <select name="gender" class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Term</label>
+                        <select name="enrollment_term" class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                            <option value="Term 1">Term 1</option>
+                            <option value="Term 2">Term 2</option>
+                            <option value="Term 3">Term 3</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Year</label>
+                        <input type="text" name="year" value="2026" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm text-center">
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeModal('enrollModal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition">Cancel</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Create Form & Stream Modal -->
+    <div id="classModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100">
+            <button onclick="closeModal('classModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Create Form & Stream</h3>
+            
+            <form method="POST" class="mb-4 pb-4 border-b border-gray-100">
+                <input type="hidden" name="action" value="add_form">
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">New Form / Grade Name</label>
+                <div class="flex space-x-2">
+                    <input type="text" name="form_name" placeholder="e.g. Form 4" required class="flex-1 px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Add Form</button>
+                </div>
+            </form>
+
+            <form method="POST">
+                <input type="hidden" name="action" value="add_stream">
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Select Form</label>
+                    <select name="form_id" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                        {% for form in forms %}
+                            <option value="{{ form.id }}">{{ form.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Stream Name</label>
+                    <input type="text" name="stream_name" placeholder="e.g. North" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm">Add Stream</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Bulk Upload Modal -->
+    <div id="bulkModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative border border-gray-100">
+            <button onclick="closeModal('bulkModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Bulk Student Upload</h3>
+            <p class="text-xs text-gray-500 mb-4">Download the CSV template, fill in student records, and import.</p>
+            
+            <div class="space-y-3">
+                <a href="{{ url_for('download_template') }}" class="w-full block text-center bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                    📥 Download CSV Template
+                </a>
+                
+                <div class="pt-2">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Upload Filled CSV File</label>
+                    <input type="file" accept=".csv" class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-gray-50">
+                </div>
+                <button onclick="alert('CSV processing parser can be wired next as you prefer!')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                    Upload & Import Students
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
