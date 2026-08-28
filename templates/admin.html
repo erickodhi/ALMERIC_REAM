@@ -249,19 +249,20 @@
             <h3 class="text-lg font-bold text-gray-800 mb-2">Bulk Student Upload</h3>
             <p class="text-xs text-gray-500 mb-4">Download the CSV template, fill in student records, and import.</p>
             
-            <div class="space-y-3">
+            <form action="{{ url_for('upload_csv') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                 <a href="{{ url_for('download_template') }}" class="w-full block text-center bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
                     📥 Download CSV Template
                 </a>
                 
                 <div class="pt-2">
                     <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Upload Filled CSV File</label>
-                    <input type="file" accept=".csv" class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-gray-50">
+                    <input type="file" name="csv_file" accept=".csv" required class="w-full px-3 py-2 border rounded-lg border-gray-300 text-sm bg-gray-50">
                 </div>
-                <button onclick="alert('CSV processing parser can be wired next as you prefer!')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
                     Upload & Import Students
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 

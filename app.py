@@ -118,6 +118,64 @@ def download_template():
         },
     )
 
+import csv
+import io
+
+@app.route('/admin/upload_csv', methods=['POST'])
+def upload_csv():
+    if 'csv_file' not in request.files:
+        flash('No file uploaded.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    file = request.files['csv_file']
+    if file.filename == '':
+        flash('No selected file.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if file and file.filename.endswith('.csv'):
+        try:
+            stream = io.TextIOWrapper(file.stream, encoding='utf-8')
+            csv_reader = csv.DictReader(stream)
+            
+            success_count = 0
+            duplicate_count = 0
+
+            for row in csv_reader:
+                adm_no = row.get('Admission Number', '').strip()
+                full_name = row.get('Full Name', '').strip()
+                form = row.get('Form/Grade', '').strip()
+                stream_name = row.get('Stream', '').strip()
+                gender = row.get('Gender', 'Male').strip()
+                enrollment_term = row.get('Term of Enrollment', 'Term 1').strip()
+                year = row.get('Year', '2026').strip()
+
+                if adm_no and full_name and form and stream_name:
+                    existing = Student.query.filter_by(adm_no=adm_no).first()
+                    if not existing:
+                        new_student = Student(
+                            adm_no=adm_no,
+                            full_name=full_name,
+                            form=form,
+                            stream=stream_name,
+                            gender=gender,
+                            enrollment_term=enrollment_term,
+                            year=year
+                        )
+                        db.session.add(new_student)
+                        success_count += 1
+                    else:
+                        duplicate_count += 1
+
+            db.session.commit()
+            flash(f'Successfully imported {success_count} students! ({duplicate_count} duplicates skipped).', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing CSV file: {str(e)}', 'danger')
+    else:
+        flash('Please upload a valid .csv file.', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
 
 @app.route('/')
 def index():
