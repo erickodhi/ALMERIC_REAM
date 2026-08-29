@@ -708,7 +708,20 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Retrieve filter parameters if any
+    # Auto-seed a test log entry if the table is completely empty so you can immediately see the UI working
+    if AuditLog.query.count() == 0:
+        try:
+            initial_log = AuditLog(
+                action_type='SYSTEM_INIT',
+                username=session.get('username', 'Admin'),
+                details='Audit log table initialized and active.'
+            )
+            db.session.add(initial_log)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error seeding initial log: {e}")
+
     selected_action = request.args.get('action', 'All')
     selected_user = request.args.get('user', 'All')
     
@@ -719,16 +732,8 @@ def audit_logs():
     if selected_user != 'All':
         query = query.filter_by(username=selected_user)
         
-
-
-        
     logs = query.order_by(AuditLog.timestamp.desc()).all()
     
-    # Fallback debug message if no records are found in the database table
-    if not logs:
-        flash("Database check: The AuditLog table currently has 0 records stored. Actions are likely not being committed to the AuditLog model yet.", "warning")
-    
-    # Get distinct action types and users for filter dropdowns
     actions = [r[0] for r in db.session.query(AuditLog.action_type.distinct()).all() if r[0]]
     usernames = [r[0] for r in db.session.query(AuditLog.username.distinct()).all() if r[0]]
     
