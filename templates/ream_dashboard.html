@@ -6,10 +6,10 @@
     <title>Ream Collection Desk - ALMERIC REAM</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 flex h-screen overflow-hidden">
+<body class="bg-slate-50 font-sans text-slate-900 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
 
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
+    <!-- SIDEBAR (Hidden on mobile phones, visible on medium screens and up) -->
+    <aside class="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0">
         <div class="px-6 py-6 border-b border-slate-800">
             <h2 class="text-lg font-bold text-white tracking-wide">ALMERIC REAM</h2>
             <p class="text-xs text-indigo-400 mt-0.5">Collection Desk Portal</p>
@@ -29,16 +29,27 @@
         </div>
     </aside>
 
+    <!-- MOBILE TOP BAR (Visible only on phones for easy navigation/logout) -->
+    <div class="md:hidden bg-slate-900 text-white px-4 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <h2 class="text-sm font-bold tracking-wide">ALMERIC REAM</h2>
+            <p class="text-[10px] text-indigo-400">Operator: {{ username }}</p>
+        </div>
+        <a href="{{ url_for('logout') }}" class="bg-rose-600 text-white px-3 py-1 rounded text-xs font-medium">
+            Logout
+        </a>
+    </div>
+
     <!-- MAIN CONTENT -->
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
-        <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-xs">
+    <main class="flex-1 flex flex-col min-h-screen md:h-screen md:overflow-y-auto">
+        <header class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">Ream Collection Management</h1>
+                <h1 class="text-base md:text-lg font-bold text-slate-800">Ream Collection Management</h1>
                 <p class="text-xs text-slate-500">Tracking stationery collections across academic terms</p>
             </div>
             
             <!-- Context Bar showing Active Year & Term -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
                 <form method="GET" action="{{ url_for('ream_dashboard') }}" class="flex items-center space-x-2">
                     <span class="text-xs font-semibold text-slate-500 uppercase">Year:</span>
                     <input type="text" name="year" value="{{ selected_year }}" onchange="this.form.submit()" class="w-16 px-2 py-1 border rounded-md border-slate-300 text-xs text-center font-medium bg-slate-50">
@@ -53,7 +64,7 @@
             </div>
         </header>
 
-        <div class="p-8 max-w-7xl mx-auto w-full space-y-6 flex-1 flex flex-col">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6 flex-1 flex flex-col">
 
             <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -68,13 +79,13 @@
 
             <!-- TABLE CONTAINER -->
             <div class="bg-white rounded-xl shadow-xs border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Student Roster & Status Matrix ({{ selected_year }} - Active: <span class="text-indigo-600">{{ selected_term }}</span>)</h2>
-                    <span class="text-xs text-slate-500 font-medium">Showing page {{ pagination.page }} of {{ pagination.pages or 1 }} (15 per page)</span>
+                <div class="px-4 md:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-xs md:text-sm font-bold text-slate-800 uppercase tracking-wide">Student Roster & Status Matrix ({{ selected_year }} - Active: <span class="text-indigo-600">{{ selected_term }}</span>)</h2>
+                    <span class="text-[11px] md:text-xs text-slate-500 font-medium">Showing page {{ pagination.page }} of {{ pagination.pages or 1 }} (15 per page)</span>
                 </div>
 
                 <div class="flex-1 overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
+                    <table class="w-full text-left border-collapse text-xs whitespace-nowrap md:whitespace-normal">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 uppercase font-semibold tracking-wider border-b border-slate-200">
                                 <th class="py-3 px-4">Adm No</th>
@@ -169,7 +180,7 @@
                 </div>
 
                 <!-- PAGINATION CONTROLS -->
-                <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
+                <div class="px-4 md:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
                     <span class="text-slate-500">
                         Page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages or 1 }}</strong>
                     </span>
