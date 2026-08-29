@@ -364,12 +364,134 @@ def login():
     return render_template('login.html')
 
 
-@app.route('/portal/hoi')
+@app.route('/portal/hoi', methods=['GET', 'POST'])
 def hoi_dashboard():
     if 'user_id' not in session:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
-    return render_template('under_construction.html', role="Head of Institution (HOI)", username=session.get('username'))
+
+    # Fetch global system settings for default active period
+    setting = SystemSetting.query.first()
+    default_year = setting.active_year if setting else '2026'
+    default_term = setting.active_term if setting else 'Term 1'
+
+    # Filter parameters from GET request
+    selected_year = request.args.get('year', default_year)
+    selected_term = request.args.get('term', default_term)
+    selected_form = request.args.get('form', 'All')
+    selected_stream = request.args.get('stream', 'All')
+    selected_status = request.args.get('status', 'All')
+
+    # 1. High-Level Metrics
+    total_students = Student.query.filter_by(year=selected_year).count()
+    
+    total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
+    total_store_sheets = total_reams_collected * 500
+
+    total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
+    available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
+
+    total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
+    total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
+    active_loose_sheets = total_loose_generated - total_loose_disbursed
+
+    # 2. School-wide Collection Rate Calculation for Active Term/Year
+    term_records = ReamRecord.query.filter_by(term=selected_term, year=selected_year).all()
+    submitted_student_ids = {r.student_id for r in term_records}
+    total_submitted_count = len(submitted_student_ids)
+    school_collection_percentage = round((total_submitted_count / total_students * 100), 1) if total_students > 0 else 0.0
+
+    # 3. Form / Grade Smart Analysis Data
+    all_forms = db.session.query(Student.form.distinct()).filter_by(year=selected_year).all()
+    form_list = [f[0] for f in all_forms if f[0]]
+    form_analysis = []
+
+    for f_name in sorted(form_list):
+        f_students = Student.query.filter_by(year=selected_year, form=f_name).all()
+        f_total = len(f_students)
+        f_submitted = sum(1 for s in f_students if s.id in submitted_student_ids)
+        f_pct = round((f_submitted / f_total * 100), 1) if f_total > 0 else 0.0
+        form_analysis.append({
+            'form': f_name,
+            'total': f_total,
+            'submitted': f_submitted,
+            'percentage': f_pct
+        })
+
+    # 4. Stream Analysis Data
+    stream_analysis = []
+    streams_query = db.session.query(Student.form, Student.stream).filter_by(year=selected_year).distinct().all()
+    unique_form_streams = sorted(list(set(streams_query)))
+
+    for f_name, s_name in unique_form_streams:
+        if not f_name or not s_name:
+            continue
+        fs_students = Student.query.filter_by(year=selected_year, form=f_name, stream=s_name).all()
+        fs_total = len(fs_students)
+        fs_submitted = sum(1 for s in fs_students if s.id in submitted_student_ids)
+        fs_pct = round((fs_submitted / fs_total * 100), 1) if fs_total > 0 else 0.0
+        stream_analysis.append({
+            'form': f_name,
+            'stream': s_name,
+            'total': fs_total,
+            'submitted': fs_submitted,
+            'percentage': fs_pct
+        })
+
+    # 5. Filtered Student Report Query
+    student_query = Student.query.filter_by(year=selected_year)
+    if selected_form != 'All':
+        student_query = student_query.filter_by(form=selected_form)
+    if selected_stream != 'All':
+        student_query = student_query.filter_by(stream=selected_stream)
+    
+    filtered_students_raw = student_query.order_by(Student.form, Student.stream, Student.adm_no).all()
+    
+    # Process status filter (Submitted vs Pending vs All)
+    filtered_report_data = []
+    for s in filtered_students_raw:
+        is_submitted = s.id in submitted_student_ids
+        status_str = 'Submitted' if is_submitted else 'Pending'
+        
+        if selected_status == 'Submitted' and not is_submitted:
+            continue
+        if selected_status == 'Pending' and is_submitted:
+            continue
+            
+        filtered_report_data.append({
+            'adm_no': s.adm_no,
+            'full_name': s.full_name,
+            'form': s.form,
+            'stream': s.stream,
+            'gender': s.gender,
+            'status': status_str
+        })
+
+    # Available years for filter dropdown
+    year_results = db.session.query(Student.year.distinct()).all()
+    available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
+
+    return render_template(
+        'hoi_dashboard.html',
+        role="Head of Institution (HOI)",
+        username=session.get('username'),
+        selected_year=selected_year,
+        selected_term=selected_term,
+        selected_form=selected_form,
+        selected_stream=selected_stream,
+        selected_status=selected_status,
+        available_years=available_years,
+        total_students=total_students,
+        total_reams_collected=total_reams_collected,
+        available_store_sheets=available_store_sheets,
+        active_loose_sheets=active_loose_sheets,
+        total_submitted_count=total_submitted_count,
+        school_collection_percentage=school_collection_percentage,
+        form_analysis=form_analysis,
+        stream_analysis=stream_analysis,
+        filtered_report_data=filtered_report_data,
+        form_list=form_list
+    )
 
 
 @app.route('/portal/ream', methods=['GET', 'POST'])

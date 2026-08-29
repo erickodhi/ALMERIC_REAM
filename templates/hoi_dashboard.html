@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOI Executive Dashboard - Ream & Exam Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; }
+        .sidebar .nav-link { color: #bdc3c7; padding: 12px 20px; border-radius: 6px; margin-bottom: 5px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #34495e; color: #ffffff; }
+        .card-stat { border: none; border-radius: 10px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-3px); }
+        .content-box { background: white; border-radius: 10px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); padding: 20px; margin-bottom: 25px; }
+        
+        /* Print Stylesheet */
+        @media print {
+            .sidebar, .btn-toolbar, .no-print, form.row { display: none !important; }
+            main { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .content-box { box-shadow: none !important; border: 1px solid #ddd; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3 no-print">
+            <h4 class="text-center py-3 text-light border-bottom border-secondary">
+                <i class="fas fa-graduation-cap me-2"></i>HOI Portal
+            </h4>
+            <div class="text-center my-3">
+                <span class="badge bg-primary px-3 py-2 fs-6">Welcome, {{ username }}</span>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{ url_for('hoi_dashboard') }}"><i class="fas fa-chart-line me-2"></i> Executive Overview</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <!-- Top Header Bar -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2 text-dark fw-bold">Executive Overview Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button onclick="window.print()" class="btn btn-dark me-2">
+                        <i class="fas fa-print me-1"></i> Print Report
+                    </button>
+                    <span class="badge bg-success fs-6 px-3 py-2">
+                        <i class="fas fa-calendar-alt me-1"></i> {{ selected_term }}, {{ selected_year }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- KPI Metric Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card card-stat bg-white p-3 border-start border-primary border-4">
+                        <div class="card-body">
+                            <div class="text-muted small text-uppercase fw-bold">Active Students</div>
+                            <div class="h3 font-weight-bold text-dark mt-2">{{ total_students }}</div>
+                            <small class="text-muted">Enrolled for {{ selected_year }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card card-stat bg-white p-3 border-start border-success border-4">
+                        <div class="card-body">
+                            <div class="text-muted small text-uppercase fw-bold">Total Reams Collected</div>
+                            <div class="h3 font-weight-bold text-success mt-2">{{ total_reams_collected }}</div>
+                            <small class="text-muted">Equivalent to {{ total_reams_collected * 500 }} sheets</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card card-stat bg-white p-3 border-start border-warning border-4">
+                        <div class="card-body">
+                            <div class="text-muted small text-uppercase fw-bold">Available Store Sheets</div>
+                            <div class="h3 font-weight-bold text-warning mt-2">{{ available_store_sheets }}</div>
+                            <small class="text-muted">Ready for exam allocation</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card card-stat bg-white p-3 border-start border-info border-4">
+                        <div class="card-body">
+                            <div class="text-muted small text-uppercase fw-bold">Active Loose Leftovers</div>
+                            <div class="h3 font-weight-bold text-info mt-2">{{ active_loose_sheets }}</div>
+                            <small class="text-muted">Available for office disbursement</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- School-Wide Collection Progress Card -->
+            <div class="content-box">
+                <h5 class="fw-bold text-secondary mb-3"><i class="fas fa-chart-bar me-2"></i> School-Wide Ream Collection Progress ({{ selected_term }})</h5>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-bold">{{ total_submitted_count }} of {{ total_students }} Students Submitted</span>
+                    <span class="fw-bold text-success">{{ school_collection_percentage }}% Completed</span>
+                </div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ school_collection_percentage }}%;" aria-valuenow="{{ school_collection_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ school_collection_percentage }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form / Grade Smart Analysis Table -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-layer-group me-2"></i> Form & Grade Smart Analysis</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Form / Grade</th>
+                                <th>Total Enrolled</th>
+                                <th>Submitted Count</th>
+                                <th style="width: 40%;">Collection Progress Bar</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in form_analysis %}
+                            <tr>
+                                <td class="fw-bold">{{ f.form }}</td>
+                                <td>{{ f.total }}</td>
+                                <td><span class="badge bg-success">{{ f.submitted }}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 15px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ f.percentage }}%;"></div>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-primary">{{ f.percentage }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">No student records found for {{ selected_year }}.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stream Analysis Table -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-stream me-2"></i> Stream-Level Collection Analysis</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Form / Grade</th>
+                                <th>Stream</th>
+                                <th>Total Enrolled</th>
+                                <th>Submitted Count</th>
+                                <th style="width: 35%;">Progress Bar</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for st in stream_analysis %}
+                            <tr>
+                                <td class="fw-bold">{{ st.form }}</td>
+                                <td>{{ st.stream }}</td>
+                                <td>{{ st.total }}</td>
+                                <td><span class="badge bg-success">{{ st.submitted }}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 15px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ st.percentage }}%;"></div>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-info">{{ st.percentage }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No stream records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Advanced Filter & Reporting Section -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
+                <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Year</label>
+                        <select name="year" class="form-select">
+                            {% for y in available_years %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Term</label>
+                        <select name="term" class="form-select">
+                            <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                            <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                            <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Form / Grade</label>
+                        <select name="form" class="form-select">
+                            <option value="All">All Forms</option>
+                            {% for f in form_list %}
+                            <option value="{{ f }}" {% if selected_form == f %}selected{% endif %}>{{ f }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Stream</label>
+                        <select name="stream" class="form-select">
+                            <option value="All">All Streams</option>
+                            <option value="East" {% if selected_stream == 'East' %}selected{% endif %}>East</option>
+                            <option value="West" {% if selected_stream == 'West' %}selected{% endif %}>West</option>
+                            <option value="North" {% if selected_stream == 'North' %}selected{% endif %}>North</option>
+                            <option value="South" {% if selected_stream == 'South' %}selected{% endif %}>South</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="All" {% if selected_status == 'All' %}selected{% endif %}>All Status</option>
+                            <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
+                            <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Filter</button>
+                    </div>
+                </form>
+
+                <!-- Filtered Students Result Table -->
+                <h5 class="text-muted mb-3"><i class="fas fa-list me-2"></i> Report Results ({{ filtered_report_data|length }} records found)</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Adm No</th>
+                                <th>Full Name</th>
+                                <th>Form / Grade</th>
+                                <th>Stream</th>
+                                <th>Gender</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in filtered_report_data %}
+                            <tr>
+                                <td>{{ row.adm_no }}</td>
+                                <td class="fw-bold">{{ row.full_name }}</td>
+                                <td>{{ row.form }}</td>
+                                <td>{{ row.stream }}</td>
+                                <td>{{ row.gender }}</td>
+                                <td>
+                                    {% if row.status == 'Submitted' %}
+                                    <span class="badge bg-success">Submitted</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No student records match the selected filter criteria.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
