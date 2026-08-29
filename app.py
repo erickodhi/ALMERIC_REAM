@@ -461,6 +461,112 @@ def staff_portal():
         return redirect(url_for('login'))
     return render_template('under_construction.html', role=session.get('role'), username=session.get('username'))
 
+#............
+@app.route('/examination-office', methods=['GET', 'POST'])
+def exam_office():
+    # 1. Calculate total reams collected in store (adjust query to match your Ream Collection model)
+    total_reams_collected = db.session.query(db.func.sum(ReamCollection.number_of_reams)).scalar() or 0
+    total_store_sheets = total_reams_collected * 500
+
+    # Calculate total sheets already requested/taken from store
+    total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
+    available_store_sheets = total_store_sheets - total_sheets_requested
+
+    # Calculate current undiburse loose leftover sheets across requests
+    # (Simplified calculation: sum of loose leftovers minus sum of disbursed sheets)
+    total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
+    total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
+    active_loose_sheets = total_loose_generated - total_loose_disbursed
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # Guardrail 1: Check if any ream is collected yet
+        if total_reams_collected <= 0:
+            flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
+            return redirect(url_for('exam_office'))
+
+        # Guardrail 2: Check if active loose sheets exceed 20
+        if action == 'request_reams' and active_loose_sheets > 20:
+            flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
+            return redirect(url_for('exam_office'))
+
+        if action == 'request_reams':
+            subject = request.form.get('subject')
+            purpose = request.form.get('purpose')
+            target_form = request.form.get('target_form')
+            stream = request.form.get('stream')
+            num_students = int(request.form.get('num_students'))
+            sheets_per_student = int(request.form.get('sheets_per_student'))
+
+            raw_needed = num_students * sheets_per_student
+
+            # Apply custom padding rule (e.g. 60 padding sheets if around 200 or custom logic)
+            padding = 60 if raw_needed <= 250 else 50  # or your exact business formula
+            total_needed_with_padding = raw_needed + padding
+
+            # Guardrail 3: Check if requesting more than available store sheets
+            if total_needed_with_padding > available_store_sheets:
+                flash("REQUESTING MORE THAN IS AVAILABLE IN THE STORE.", "error")
+                return redirect(url_for('exam_office'))
+
+            # Calculate reams and loose leftover sheets
+            reams_to_take = total_needed_with_padding // 500
+            loose_leftover = total_needed_with_padding % 500
+
+            new_req = ExamRequest(
+                subject=subject,
+                purpose=purpose,
+                target_form=target_form,
+                stream=stream,
+                num_students=num_students,
+                sheets_per_student=sheets_per_student,
+                total_sheets_needed=total_needed_with_padding,
+                padding_sheets=padding,
+                loose_leftover_sheets=loose_leftover,
+                reams_allocated=reams_to_take if reams_to_take > 0 else 1
+            )
+            db.session.add(new_req)
+            db.session.commit()
+            flash("Exam ream request verified and recorded successfully!", "success")
+            return redirect(url_for('exam_office'))
+
+        elif action == 'disburse_sheets':
+            subject = request.form.get('subject')
+            purpose = request.form.get('purpose')
+            target_form = request.form.get('target_form')
+            stream = request.form.get('stream')
+            num_students = int(request.form.get('num_students'))
+            sheets_per_student = int(request.form.get('sheets_per_student'))
+            disbursed_total = num_students * sheets_per_student
+
+            new_disb = SheetDisbursement(
+                subject=subject,
+                purpose=purpose,
+                target_form=target_form,
+                stream=stream,
+                num_students=num_students,
+                sheets_per_student=sheets_per_student,
+                disbursed_sheets=disbursed_total
+            )
+            db.session.add(new_disb)
+            db.session.commit()
+            flash("Loose leftover sheets disbursed successfully!", "success")
+            return redirect(url_for('exam_office'))
+
+    exam_requests = ExamRequest.query.order_by(ExamRequest.created_at.desc()).all()
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
+
+    return render_template(
+        'examination_office.html',
+        exam_requests=exam_requests,
+        disbursements=disbursements,
+        total_reams_collected=total_reams_collected,
+        available_store_sheets=available_store_sheets,
+        active_loose_sheets=active_loose_sheets
+    )
+#...............
+
 
 @app.route('/logout')
 def logout():

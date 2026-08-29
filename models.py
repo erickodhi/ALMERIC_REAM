@@ -1,4 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from extensions import db  # or wherever your db instance is defined
 
 db = SQLAlchemy()
 
@@ -79,3 +81,32 @@ class SystemSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     active_year = db.Column(db.String(10), default='2026')
     active_term = db.Column(db.String(20), default='Term 1')
+
+
+class ExamRequest(db.Model):
+    __tablename__ = 'exam_request'
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(100), nullable=False)
+    purpose = db.Column(db.String(150), nullable=False)
+    target_form = db.Column(db.String(50), nullable=False)
+    stream = db.Column(db.String(50), nullable=False)
+    num_students = db.Column(db.Integer, nullable=False)
+    sheets_per_student = db.Column(db.Integer, nullable=False)
+    total_sheets_needed = db.Column(db.Integer, nullable=False)
+    padding_sheets = db.Column(db.Integer, default=0)
+    loose_leftover_sheets = db.Column(db.Integer, default=0)
+    reams_allocated = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='Approved') # Approved, Disbursed, etc.
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SheetDisbursement(db.Model):
+    __tablename__ = 'sheet_disbursement'
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(100), nullable=False)
+    purpose = db.Column(db.String(150), nullable=False)
+    target_form = db.Column(db.String(50), nullable=False)
+    stream = db.Column(db.String(50), nullable=False)
+    num_students = db.Column(db.Integer, nullable=False)
+    sheets_per_student = db.Column(db.Integer, nullable=False)
+    disbursed_sheets = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

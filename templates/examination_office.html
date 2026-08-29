@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examination Office - ALMERIC REAM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0">
+        <div class="px-6 py-6 border-b border-slate-800">
+            <h2 class="text-xl font-bold text-white tracking-wider">ALMERIC REAM</h2>
+            <p class="text-xs text-slate-400 mt-1">Examination Portal</p>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="{{ url_for('exam_office') }}" class="flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium transition">
+                <span class="mr-3">📝</span> Exam Requests & Store
+            </a>
+        </nav>
+        <div class="px-6 py-4 border-t border-slate-800 text-xs text-slate-500">Exam Office v1.0</div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col min-h-screen md:h-screen md:overflow-y-auto">
+        <header class="bg-white shadow-sm border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-lg md:text-2xl font-bold text-gray-800">Examination Office & Store Requests</h1>
+            <div class="flex items-center space-x-3">
+                <span class="text-xs md:text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">Active Loose Sheets: {{ active_loose_sheets }}</span>
+            </div>
+        </header>
+
+        <div class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg text-white font-medium shadow-sm text-xs md:text-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600 animate-bounce{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Action Buttons Bar -->
+            <div class="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div>
+                    <p class="text-xs text-gray-500">Store Available Sheets: <span class="font-bold text-gray-800">{{ available_store_sheets }}</span></p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="openModal('requestModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer">
+                        + Request Reams
+                    </button>
+                    {% if active_loose_sheets > 0 %}
+                    <button onclick="openModal('disburseModal')" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer">
+                        Disburse Loose Sheets ({{ active_loose_sheets }})
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Audit Log: Exam Requests -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+                    <h2 class="text-lg font-bold text-gray-800">Exam Paper Request Audit Log</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Track subjects, quantities, padding sheets, and leftover loose sheets</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+                        <thead>
+                            <tr class="bg-gray-100/70 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-4 border-b">Subject / Title</th>
+                                <th class="py-3 px-4 border-b">Purpose</th>
+                                <th class="py-3 px-4 border-b">Form / Stream</th>
+                                <th class="py-3 px-4 border-b">Students x Rate</th>
+                                <th class="py-3 px-4 border-b">Padding Sheets</th>
+                                <th class="py-3 px-4 border-b">Loose Leftovers</th>
+                                <th class="py-3 px-4 border-b">Reams Taken</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-200">
+                            {% for req in exam_requests %}
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-semibold text-gray-900">{{ req.subject }}</td>
+                                <td class="py-3 px-4 text-xs text-gray-600">{{ req.purpose }}</td>
+                                <td class="py-3 px-4 text-xs">{{ req.target_form }} - {{ req.stream }}</td>
+                                <td class="py-3 px-4 text-xs">{{ req.num_students }} × {{ req.sheets_per_student }}</td>
+                                <td class="py-3 px-4 text-xs text-indigo-600 font-semibold">+{{ req.padding_sheets }}</td>
+                                <td class="py-3 px-4 text-xs text-amber-600 font-semibold">{{ req.loose_leftover }}</td>
+                                <td class="py-3 px-4 text-xs font-bold text-gray-800">{{ req.reams_allocated }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="py-10 text-center text-gray-400 text-sm">No exam requests logged yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log: Disbursed Sheets -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+                    <h2 class="text-lg font-bold text-gray-800">Loose Sheets Disbursement Audit Log</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+                        <thead>
+                            <tr class="bg-gray-100/70 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-4 border-b">Subject / Title</th>
+                                <th class="py-3 px-4 border-b">Purpose</th>
+                                <th class="py-3 px-4 border-b">Form / Stream</th>
+                                <th class="py-3 px-4 border-b">Disbursed Sheets</th>
+                                <th class="py-3 px-4 border-b">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-200">
+                            {% for disb in disbursements %}
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 font-semibold text-gray-900">{{ disb.subject }}</td>
+                                <td class="py-3 px-4 text-xs text-gray-600">{{ disb.purpose }}</td>
+                                <td class="py-3 px-4 text-xs">{{ disb.target_form }} - {{ disb.stream }}</td>
+                                <td class="py-3 px-4 text-xs font-bold text-emerald-600">{{ disb.disbursed_sheets }}</td>
+                                <td class="py-3 px-4 text-xs text-slate-500">{{ disb.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-gray-400 text-sm">No disbursements logged yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- REQUEST MODAL WITH VERIFICATION STEP -->
+    <div id="requestModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h2 class="text-lg font-bold text-gray-800">Request Reams / Exam Papers</h2>
+            <form id="requestForm" action="{{ url_for('exam_office') }}" method="POST" class="space-y-3">
+                <input type="hidden" name="action" value="request_reams">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Subject Name / Title</label>
+                    <input type="text" name="subject" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Purpose</label>
+                    <input type="text" name="purpose" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Target Form / Grade</label>
+                        <input type="text" name="target_form" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Stream</label>
+                        <input type="text" name="stream" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Number of Students</label>
+                        <input type="number" id="numStudents" name="num_students" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Sheets per Student</label>
+                        <input type="number" id="sheetsPerStudent" name="sheets_per_student" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('requestModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                    <button type="button" onclick="showVerificationPopup()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Preview & Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VERIFICATION / APPROVAL POPUP MODAL -->
+    <div id="verifyModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h2 class="text-lg font-bold text-gray-800">Verify Request Details</h2>
+            <div id="verifySummary" class="text-xs md:text-sm bg-gray-50 p-4 rounded-lg space-y-1.5 border"></div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('verifyModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm">Back</button>
+                <button type="button" onclick="submitVerifiedForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Verify / Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISBURSEMENT MODAL -->
+    <div id="disburseModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h2 class="text-lg font-bold text-gray-800">Disburse Loose Sheets</h2>
+            <form action="{{ url_for('exam_office') }}" method="POST" class="space-y-3">
+                <input type="hidden" name="action" value="disburse_sheets">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Subject Name / Title</label>
+                    <input type="text" name="subject" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Purpose</label>
+                    <input type="text" name="purpose" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Target Form / Grade</label>
+                        <input type="text" name="target_form" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Stream</label>
+                        <input type="text" name="stream" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Number of Students</label>
+                        <input type="number" name="num_students" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Sheets per Student</label>
+                        <input type="number" name="sheets_per_student" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('disburseModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm">Cancel</button>
+                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Disburse</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function showVerificationPopup() {
+            const students = parseInt(document.getElementById('numStudents').value) || 0;
+            const rate = parseInt(document.getElementById('sheetsPerStudent').value) || 0;
+            const raw = students * rate;
+            const padding = raw <= 250 ? 60 : 50;
+            const totalNeeded = raw + padding;
+            const reams = Math.floor(totalNeeded / 500) || 1;
+
+            document.getElementById('verifySummary').innerHTML = `
+                <p><b>Subject:</b> ${document.querySelector('[name="subject"]').value}</p>
+                <p><b>Total Students:</b> ${students} | <b>Rate:</b> ${rate}</p>
+                <p><b>Raw Sheets:</b> ${raw} + <b>Padding:</b> ${padding}</p>
+                <p><b>Approx. Reams to take:</b> <span class="text-indigo-600 font-bold">${reams} Ream(s)</span></p>
+            `;
+            closeModal('requestModal');
+            openModal('verifyModal');
+        }
+
+        function submitVerifiedForm() {
+            document.getElementById('requestForm').submit();
+        }
+    </script>
+</body>
+</html>
