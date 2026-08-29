@@ -73,7 +73,7 @@ class ReamRecord(db.Model):
     date_collected = db.Column(db.DateTime, default=db.func.current_timestamp())
     received_by = db.Column(db.String(100), nullable=False) # Staff username
 
-    student = db.relationship('Student', backref=db.backref('ream_records', lazy=True))
+    student = db.relationship('Student', backref=db.backref('ream_records', lazy=True, cascade='all, delete-orphan'))
 
 class SystemSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
