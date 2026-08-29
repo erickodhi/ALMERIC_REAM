@@ -6,10 +6,10 @@
     <title>Staff & Role Accounts - ALMERIC REAM</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 flex h-screen overflow-hidden">
+<body class="bg-gray-100 font-sans text-gray-900 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
 
-    <!-- SIDEBAR NAVIGATION -->
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
+    <!-- SIDEBAR NAVIGATION (Hidden on mobile phones, visible on medium screens and up) -->
+    <aside class="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0">
         <div class="px-6 py-6 border-b border-slate-800">
             <h2 class="text-xl font-bold text-white tracking-wider">ALMERIC REAM</h2>
             <p class="text-xs text-slate-400 mt-1">Management System</p>
@@ -30,22 +30,33 @@
         </div>
     </aside>
 
+    <!-- MOBILE TOP BAR (Visible only on phones for quick navigation) -->
+    <div class="md:hidden bg-slate-900 text-white px-4 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <h2 class="text-sm font-bold tracking-wider">ALMERIC REAM</h2>
+            <p class="text-[10px] text-slate-400">Staff Management</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('admin_dashboard') }}" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-medium text-white">📊 Dashboard</a>
+        </div>
+    </div>
+
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
-        <header class="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-800">Staff & Role Accounts</h1>
+    <main class="flex-1 flex flex-col min-h-screen md:h-screen md:overflow-y-auto">
+        <header class="bg-white shadow-sm border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-lg md:text-2xl font-bold text-gray-800">Staff & Role Accounts</h1>
             <div class="flex items-center space-x-3">
-                <span class="text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">Administrator</span>
+                <span class="text-xs md:text-sm font-medium bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">Administrator</span>
             </div>
         </header>
 
-        <div class="p-8 max-w-7xl mx-auto w-full">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto w-full">
 
             <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="mb-6 p-4 rounded-lg text-white font-medium shadow-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600{% endif %}">
+                        <div class="mb-6 p-4 rounded-lg text-white font-medium shadow-sm text-xs md:text-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600{% endif %}">
                             {{ message }}
                         </div>
                     {% endfor %}
@@ -79,7 +90,7 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer">
                             Create Account
                         </button>
                     </form>
@@ -93,7 +104,7 @@
                     </div>
                     
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
                             <thead>
                                 <tr class="bg-gray-100/70 text-gray-600 text-xs uppercase tracking-wider font-semibold">
                                     <th class="py-3 px-4 border-b">Username</th>
@@ -116,7 +127,7 @@
                                         <form action="{{ url_for('manage_staff') }}" method="POST" onsubmit="return confirm('Delete account for {{ staff.username }}?');" class="inline">
                                             <input type="hidden" name="action" value="delete_staff">
                                             <input type="hidden" name="staff_id" value="{{ staff.id }}">
-                                            <button type="submit" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition">Delete</button>
+                                            <button type="submit" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition cursor-pointer">Delete</button>
                                         </form>
                                     </td>
                                 </tr>
