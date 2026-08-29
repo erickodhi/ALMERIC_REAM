@@ -29,11 +29,22 @@ with app.app_context():
 
 
 def log_audit(action_type, details, target="System"):
-    """Helper function to cleanly write to the audit log table with error safety."""
+    """Helper function to cleanly write to the audit log table with error safety and guaranteed username capture."""
     try:
+        # Resolve username aggressively from session or database fallback
+        current_user = session.get('username')
+        
+        if not current_user and session.get('user_id'):
+            staff_obj = StaffUser.query.get(session.get('user_id'))
+            if staff_obj:
+                current_user = staff_obj.username
+                
+        if not current_user:
+            current_user = 'System Operator'
+
         audit = AuditLog(
             action_type=action_type,
-            username=session.get('username', 'Staff'),
+            username=str(current_user),
             target=target,
             details=details
         )
