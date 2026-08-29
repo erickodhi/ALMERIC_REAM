@@ -12,6 +12,7 @@ from flask import (
     session,
 )
 from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, ExamRequest, SheetDisbursement, db
+from flask_login import login_required
 
 app = Flask(__name__)
 
