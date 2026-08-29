@@ -11,8 +11,7 @@ from flask import (
     url_for,
     session,
 )
-from models import Form, Student, Stream, db
-from models import StaffUser  # Ensure StaffUser is imported at the top with your other models
+from models import Form, Student, Stream, StaffUser, ReamRecord, db
 
 app = Flask(__name__)
 
@@ -328,16 +327,16 @@ def login():
             session['role'] = staff.role
             flash(f'Logged in successfully as {staff.role}', 'success')
             
-            # Smart role-based redirection to their specific under-construction page
+            # Smart role-based redirection to their specific page
             role_str = staff.role.lower()
             if 'head' in role_str or 'hoi' in role_str:
                 return redirect(url_for('hoi_dashboard'))
-            elif 'ream' in role_str or 'collection' in role_str:
+            elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
                 return redirect(url_for('ream_dashboard'))
             elif 'exam' in role_str:
                 return redirect(url_for('exam_dashboard'))
             else:
-                return redirect(url_for('staff_portal'))
+                return redirect(url_for('ream_dashboard'))
         else:
             flash('Invalid username or password.', 'danger')
             
@@ -382,7 +381,7 @@ def ream_dashboard():
                             student_id=student_id,
                             term=selected_term,
                             year=selected_year,
-                        reams_count=1,
+                            reams_count=1,
                             received_by=session.get('username')
                         )
                         db.session.add(new_record)
@@ -422,6 +421,7 @@ def ream_dashboard():
         selected_year=selected_year,
         selected_term=selected_term
     )
+
 
 @app.route('/portal/exam')
 def exam_dashboard():
