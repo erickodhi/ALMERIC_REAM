@@ -710,7 +710,7 @@ def audit_logs():
 
     # Ensure only authorized admin/HOI users can view logs
     user_role = session.get('role', '').lower()
-    allowed_keywords = ['admin', 'hoi', 'principal', 'head']
+    allowed_keywords = ['admin', 'hoi', 'principal', 'head', 'institution']
     if not any(kw in user_role for kw in allowed_keywords):
         flash('Unauthorized access to audit logs.', 'danger')
         return redirect(url_for('hoi_dashboard'))
