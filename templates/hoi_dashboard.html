@@ -45,6 +45,10 @@
                 <li class="nav-item mt-4">
                     <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
                 </li>
+                  <!-- Add this navigation item inside your sidebar <ul> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('audit_logs') }}"><i class="fas fa-history me-2"></i> Audit & Logs</a>
+                </li>
             </ul>
         </nav>
 

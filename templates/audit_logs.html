@@ -1,0 +1,150 @@
+<!-- Create templates/audit_logs.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Audit Logs & Activity Trail</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; }
+        .sidebar .nav-link { color: #bdc3c7; padding: 12px 20px; border-radius: 6px; margin-bottom: 5px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #34495e; color: #ffffff; }
+        .content-box { background: white; border-radius: 10px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); padding: 20px; margin-bottom: 25px; }
+        
+        @media print {
+            .sidebar, .btn-toolbar, .no-print, form.row { display: none !important; }
+            main { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .content-box { box-shadow: none !important; border: 1px solid #ddd; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3 no-print">
+            <h4 class="text-center py-3 text-light border-bottom border-secondary">
+                <i class="fas fa-graduation-cap me-2"></i>HOI Portal
+            </h4>
+            <div class="text-center my-3">
+                <span class="badge bg-primary px-3 py-2 fs-6">Welcome, {{ username }}</span>
+            </div>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('hoi_dashboard') }}"><i class="fas fa-chart-line me-2"></i> Executive Overview</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{ url_for('audit_logs') }}"><i class="fas fa-history me-2"></i> Audit & Logs</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <!-- Header Bar -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2 text-dark fw-bold"><i class="fas fa-clipboard-list text-primary me-2"></i> System Audit Trail & Activity Logs</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button onclick="window.print()" class="btn btn-dark">
+                        <i class="fas fa-print me-1"></i> Print Log Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Filter Controls -->
+            <div class="content-box">
+                <h5 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Filter Log Entries</h5>
+                <form method="GET" action="{{ url_for('audit_logs') }}" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Action Type</label>
+                        <select name="action" class="form-select">
+                            <option value="All">All Actions</option>
+                            {% for act in actions %}
+                            <option value="{{ act }}" {% if selected_action == act %}selected{% endif %}>{{ act }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">User / Operator</label>
+                        <select name="user" class="form-select">
+                            <option value="All">All Users</option>
+                            {% for usr in usernames %}
+                            <option value="{{ usr }}" {% if selected_user == usr %}selected{% endif %}>{{ usr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-search me-1"></i> Filter Logs</button>
+                        <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-secondary w-50">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Audit Logs Table -->
+            <div class="content-box">
+                <h5 class="text-secondary mb-3"><i class="fas fa-database me-2"></i> Recorded Transactions & Actions ({{ logs|length }} total)</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action Type</th>
+                                <th>Target / Record</th>
+                                <th>Details / Description</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td class="small text-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
+                                <td><span class="badge bg-secondary">{{ log.username }}</span></td>
+                                <td>
+                                    <span class="badge {% if log.action_type == 'DELETE' %}bg-danger{% elif log.action_type == 'UPDATE' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                        {{ log.action_type }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold">{{ log.target }}</td>
+                                <td class="small">{{ log.details }}</td>
+                                <td class="small text-muted font-monospace">{{ log.ip_address or '127.0.0.1' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No audit logs found matching your filters.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

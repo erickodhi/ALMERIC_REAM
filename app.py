@@ -702,6 +702,39 @@ def exam_office():
         active_loose_sheets=active_loose_sheets
     )
 
+# Add this route to your Flask application backend
+@app.route('/audit-logs')
+@login_required
+def audit_logs():
+    # Ensure only authorized admin/HOI users can view logs
+    if session.get('role') not in ['Admin', 'HOI', 'Principal']:
+        flash('Unauthorized access to audit logs.', 'danger')
+        return redirect(url_for('hoi_dashboard'))
+    
+    # Retrieve filter parameters if any
+    selected_action = request.args.get('action', 'All')
+    selected_user = request.args.get('user', 'All')
+    
+    query = AuditLog.query
+    
+    if selected_action != 'All':
+        query = query.filter_by(action_type=selected_action)
+    if selected_user != 'All':
+        query = query.filter_by(username=selected_user)
+        
+    logs = query.order_by(AuditLog.timestamp.desc()).all()
+    
+    # Get distinct action types and users for filter dropdowns
+    actions = [r[0] for r in db.session.query(AuditLog.action_type.distinct()).all() if r[0]]
+    usernames = [r[0] for r in db.session.query(AuditLog.username.distinct()).all() if r[0]]
+    
+    return render_template('audit_logs.html',
+                           username=session.get('username', 'Admin'),
+                           logs=logs,
+                           actions=actions,
+                           usernames=usernames,
+                           selected_action=selected_action,
+                           selected_user=selected_user)
 
 @app.route('/logout')
 def logout():
