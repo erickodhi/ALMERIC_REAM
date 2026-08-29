@@ -11,7 +11,7 @@ from flask import (
     url_for,
     session,
 )
-from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, db
+from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, ExamRequest, SheetDisbursement, db
 
 app = Flask(__name__)
 
@@ -355,7 +355,7 @@ def login():
             elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
                 return redirect(url_for('ream_dashboard'))
             elif 'exam' in role_str:
-                return redirect(url_for('examination_office_dashboard'))
+                return redirect(url_for('exam_office'))
             else:
                 return redirect(url_for('ream_dashboard'))
         else:
@@ -451,7 +451,7 @@ def exam_dashboard():
     if 'user_id' not in session:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
-    return render_template('under_construction.html', role="Examination Office", username=session.get('username'))
+    return redirect(url_for('exam_office'))
 
 
 @app.route('/portal')
@@ -461,11 +461,15 @@ def staff_portal():
         return redirect(url_for('login'))
     return render_template('under_construction.html', role=session.get('role'), username=session.get('username'))
 
-#............
+
 @app.route('/examination-office', methods=['GET', 'POST'])
 def exam_office():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     # 1. Calculate total reams collected in store (adjust query to match your Ream Collection model)
-    total_reams_collected = db.session.query(db.func.sum(ReamCollection.number_of_reams)).scalar() or 0
+    total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
 
     # Calculate total sheets already requested/taken from store
@@ -473,7 +477,6 @@ def exam_office():
     available_store_sheets = total_store_sheets - total_sheets_requested
 
     # Calculate current undiburse loose leftover sheets across requests
-    # (Simplified calculation: sum of loose leftovers minus sum of disbursed sheets)
     total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
@@ -501,8 +504,8 @@ def exam_office():
 
             raw_needed = num_students * sheets_per_student
 
-            # Apply custom padding rule (e.g. 60 padding sheets if around 200 or custom logic)
-            padding = 60 if raw_needed <= 250 else 50  # or your exact business formula
+            # Apply custom padding rule
+            padding = 60 if raw_needed <= 250 else 50
             total_needed_with_padding = raw_needed + padding
 
             # Guardrail 3: Check if requesting more than available store sheets
@@ -565,7 +568,6 @@ def exam_office():
         available_store_sheets=available_store_sheets,
         active_loose_sheets=active_loose_sheets
     )
-#...............
 
 
 @app.route('/logout')
