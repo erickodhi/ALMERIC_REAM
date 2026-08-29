@@ -543,6 +543,11 @@ def exam_office():
             sheets_per_student = int(request.form.get('sheets_per_student'))
             disbursed_total = num_students * sheets_per_student
 
+            # Guardrail: Prevent disbursing more loose sheets than are currently active/available
+            if disbursed_total > active_loose_sheets:
+                flash(f"DISBURSEMENT DENIED: Cannot disburse {disbursed_total} sheets. You only have {active_loose_sheets} active loose leftover sheets available.", "error")
+                return redirect(url_for('exam_office'))
+
             new_disb = SheetDisbursement(
                 subject=subject,
                 purpose=purpose,
