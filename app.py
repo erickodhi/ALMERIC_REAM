@@ -395,8 +395,12 @@ def hoi_dashboard():
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
 
-    # 2. School-wide Collection Rate Calculation for Active Term/Year
-    term_records = ReamRecord.query.filter_by(term=selected_term, year=selected_year).all()
+    # 2. School-wide Collection Rate Calculation for Active Term/Year (Case-insensitive & string-safe match)
+    term_records = ReamRecord.query.filter(
+        db.func.lower(ReamRecord.term) == selected_term.lower(),
+        ReamRecord.year == str(selected_year)
+    ).all()
+    
     submitted_student_ids = {r.student_id for r in term_records}
     total_submitted_count = len(submitted_student_ids)
     school_collection_percentage = round((total_submitted_count / total_students * 100), 1) if total_students > 0 else 0.0
