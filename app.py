@@ -355,7 +355,7 @@ def login():
             elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
                 return redirect(url_for('ream_dashboard'))
             elif 'exam' in role_str:
-                return redirect(url_for('exam_dashboard'))
+                return redirect(url_for('examination_office_dashboard'))
             else:
                 return redirect(url_for('ream_dashboard'))
         else:
