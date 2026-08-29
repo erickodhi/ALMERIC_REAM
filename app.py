@@ -146,7 +146,10 @@ def promote_students():
         'Form 1': 'Form 2',
         'Form 2': 'Form 3',
         'Form 3': 'Form 4',
-        'Form 4': 'Alumni'
+        'Form 4': 'Alumni',
+        'Grade 10': 'Grade 11',
+        'Grade 11': 'Grade 12',
+        'Grade 12': 'Alumni'
     }
 
     for s in source_students:
