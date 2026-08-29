@@ -1,3 +1,6 @@
+import csv
+import io
+import os
 from flask import (
     Flask,
     Response,
@@ -699,7 +702,7 @@ def exam_office():
         active_loose_sheets=active_loose_sheets
     )
 
-# Updated audit-logs route using regular Flask session instead of flask_login
+
 @app.route('/audit-logs')
 def audit_logs():
     if 'user_id' not in session:
@@ -736,6 +739,7 @@ def audit_logs():
                            usernames=usernames,
                            selected_action=selected_action,
                            selected_user=selected_user)
+
 
 @app.route('/logout')
 def logout():
