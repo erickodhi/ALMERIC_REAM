@@ -708,9 +708,6 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Temporary bypass: Let any logged-in staff view the audit logs
-    # user_role = session.get('role', '').lower()
-    
     # Retrieve filter parameters if any
     selected_action = request.args.get('action', 'All')
     selected_user = request.args.get('user', 'All')
@@ -723,6 +720,10 @@ def audit_logs():
         query = query.filter_by(username=selected_user)
         
     logs = query.order_by(AuditLog.timestamp.desc()).all()
+    
+    # Fallback debug message if no records are found in the database table
+    if not logs:
+        flash("Database check: The AuditLog table currently has 0 records stored. Actions are likely not being committed to the AuditLog model yet.", "warning")
     
     # Get distinct action types and users for filter dropdowns
     actions = [r[0] for r in db.session.query(AuditLog.action_type.distinct()).all() if r[0]]
