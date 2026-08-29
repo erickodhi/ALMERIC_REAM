@@ -30,13 +30,27 @@ class Student(db.Model):
     )
 
     def get_term_statuses(self):
-        term = self.enrollment_term
-        if term == 'Term 2':
-            return {'t1': 'Exempted', 't2': 'Pending', 't3': 'Pending'}
-        elif term == 'Term 3':
-            return {'t1': 'Exempted', 't2': 'Exempted', 't3': 'Pending'}
-        else:
-            return {'t1': 'Pending', 't2': 'Pending', 't3': 'Pending'}
+        term_map_num = {'Term 1': 1, 'Term 2': 2, 'Term 3': 3}
+        student_enrol_num = term_map_num.get(self.enrollment_term, 1)
+
+        statuses = {}
+        for term_name, t_key in [('Term 1', 't1'), ('Term 2', 't2'), ('Term 3', 't3')]:
+            t_num = term_map_num[term_name]
+            if t_num < student_enrol_num:
+                statuses[t_key] = 'Exempted'
+            else:
+                # Check if a ReamRecord exists for this student, term, and year
+                record = ReamRecord.query.filter_by(
+                    student_id=self.id, 
+                    term=term_name, 
+                    year=self.year
+                ).first()
+                
+                if record:
+                    statuses[t_key] = 'Submitted'
+                else:
+                    statuses[t_key] = 'Pending'
+        return statuses
 
     def get_reams_owed(self):
         statuses = self.get_term_statuses()
