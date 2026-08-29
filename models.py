@@ -110,3 +110,12 @@ class SheetDisbursement(db.Model):
     sheets_per_student = db.Column(db.Integer, nullable=False)
     disbursed_sheets = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    username = db.Column(db.String(100), nullable=False)
+    action_type = db.Column(db.String(50), nullable=False)  # e.g., INSERT, UPDATE, DELETE, LOGIN
+    target = db.Column(db.String(150), nullable=False)     # e.g., Student, Ream Allocation, User
+    details = db.Column(db.Text, nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True)
