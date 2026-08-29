@@ -708,7 +708,7 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Auto-seed a test log entry if the table is completely empty so you can immediately see the UI working
+    # Auto-seed a test log entry if the table is completely empty so filters populate
     if AuditLog.query.count() == 0:
         try:
             initial_log = AuditLog(
@@ -734,8 +734,9 @@ def audit_logs():
         
     logs = query.order_by(AuditLog.timestamp.desc()).all()
     
-    actions = [r[0] for r in db.session.query(AuditLog.action_type.distinct()).all() if r[0]]
-    usernames = [r[0] for r in db.session.query(AuditLog.username.distinct()).all() if r[0]]
+    # Corrected extraction for filter dropdowns (querying db.session.query(AuditLog.column))
+    actions = [r[0] for r in db.session.query(AuditLog.action_type).distinct().all() if r[0]]
+    usernames = [r[0] for r in db.session.query(AuditLog.username).distinct().all() if r[0]]
     
     return render_template('audit_logs.html',
                            username=session.get('username', 'Admin'),
