@@ -702,7 +702,6 @@ def exam_office():
         active_loose_sheets=active_loose_sheets
     )
 
-
 @app.route('/audit-logs')
 def audit_logs():
     if 'user_id' not in session:
@@ -710,8 +709,9 @@ def audit_logs():
         return redirect(url_for('login'))
 
     # Ensure only authorized admin/HOI users can view logs
-    user_role = session.get('role', '')
-    if user_role not in ['Admin', 'HOI', 'Principal'] and 'head' not in user_role.lower():
+    user_role = session.get('role', '').lower()
+    allowed_keywords = ['admin', 'hoi', 'principal', 'head']
+    if not any(kw in user_role for kw in allowed_keywords):
         flash('Unauthorized access to audit logs.', 'danger')
         return redirect(url_for('hoi_dashboard'))
     
@@ -739,7 +739,6 @@ def audit_logs():
                            usernames=usernames,
                            selected_action=selected_action,
                            selected_user=selected_user)
-
 
 @app.route('/logout')
 def logout():
