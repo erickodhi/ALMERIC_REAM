@@ -28,6 +28,25 @@ with app.app_context():
     db.create_all()
 
 
+def log_audit(action_type, details, target='System'):
+    """Helper function to record system audit logs."""
+    try:
+        username = session.get('username', 'System / Anonymous')
+        ip = request.remote_addr if request else None
+        new_log = AuditLog(
+            action_type=action_type,
+            username=username,
+            target=target,
+            details=details,
+            ip_address=ip
+        )
+        db.session.add(new_log)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error logging audit: {e}")
+
+
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     # Ensure system setting exists
@@ -47,6 +66,7 @@ def admin_dashboard():
                 system_setting.active_year = active_year.strip()
                 system_setting.active_term = active_term.strip()
                 db.session.commit()
+                log_audit('SETTINGS', f"Locked active collection period to {active_term}, {active_year}.", target='System Settings')
                 flash(f'Active collection period locked to {active_term}, {active_year} successfully!', 'success')
             return redirect(url_for('admin_dashboard'))
 
@@ -58,6 +78,7 @@ def admin_dashboard():
                     new_form = Form(name=form_name)
                     db.session.add(new_form)
                     db.session.commit()
+                    log_audit('CONFIG', f"Added new form/grade: {form_name}", target=form_name)
                     flash(f'Form "{form_name}" created successfully!', 'success')
                 else:
                     flash(f'Form "{form_name}" already exists.', 'danger')
@@ -70,6 +91,7 @@ def admin_dashboard():
                 new_stream = Stream(name=stream_name, form_id=form_id)
                 db.session.add(new_stream)
                 db.session.commit()
+                log_audit('CONFIG', f"Added stream {stream_name} to form ID {form_id}", target=stream_name)
                 flash(f'Stream "{stream_name}" added successfully!', 'success')
             return redirect(url_for('admin_dashboard'))
 
@@ -97,21 +119,19 @@ def admin_dashboard():
                 )
                 db.session.add(new_student)
                 db.session.commit()
+                log_audit('STUDENT_ENROLLMENT', f"Enrolled student {full_name} (Adm: {adm_no}) in {form} {stream} for {year}.", target=full_name)
                 flash(f'Student {full_name} enrolled successfully!', 'success')
             return redirect(url_for('admin_dashboard'))
 
-    # Get all available distinct years for the filter dropdown
     year_results = db.session.query(Student.year.distinct()).all()
     available_years = [y[0] for y in year_results] if year_results else ['2026']
     available_years = sorted(list(set(available_years)))
 
-    # Selected year filter query parameter (defaults to the latest or '2026')
     selected_year = request.args.get('year', available_years[-1] if available_years else '2026')
 
     forms = Form.query.all()
     students = Student.query.filter_by(year=selected_year).all()
     
-    # Ensure streams are explicitly queried/loaded for each form object
     for form in forms:
         if not hasattr(form, 'streams') or not form.streams:
             form.streams = Stream.query.filter_by(form_id=form.id).all()
@@ -174,6 +194,7 @@ def promote_students():
         promoted_count += 1
 
     db.session.commit()
+    log_audit('STUDENT_PROMOTION', f"Promoted {promoted_count} students from {source_year} to {target_year}.", target=f"Year {target_year}")
     flash(f'Successfully promoted {promoted_count} students from {source_year} to {target_year}!', 'success')
     return redirect(url_for('admin_dashboard'))
 
@@ -224,6 +245,7 @@ def upload_csv():
                         duplicate_count += 1
 
             db.session.commit()
+            log_audit('CSV_IMPORT', f"Imported {success_count} students via CSV ({duplicate_count} skipped).", target='Student Bulk Upload')
             flash(f'Successfully imported {success_count} students! ({duplicate_count} duplicates skipped).', 'success')
         except Exception as e:
             db.session.rollback()
@@ -237,8 +259,10 @@ def upload_csv():
 @app.route('/admin/delete_student/<int:student_id>', methods=['POST'])
 def delete_student(student_id):
     student = Student.query.get_or_404(student_id)
+    student_name = student.full_name
     db.session.delete(student)
     db.session.commit()
+    log_audit('DELETE_STUDENT', f"Deleted student record for {student_name} (ID: {student_id}).", target=student_name)
     flash('Student record deleted successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
@@ -292,14 +316,17 @@ def manage_staff():
                 )
                 db.session.add(new_staff)
                 db.session.commit()
+                log_audit('STAFF_MANAGEMENT', f"Created staff account for {username} with role {role}.", target=username)
                 flash('Staff account created successfully!', 'success')
                 
         elif action in ['delete_staff', 'delete']:
             staff_id = request.form.get('staff_id')
             if staff_id:
                 staff_member = StaffUser.query.get_or_404(staff_id)
+                staff_username = staff_member.username
                 db.session.delete(staff_member)
                 db.session.commit()
+                log_audit('STAFF_MANAGEMENT', f"Deleted staff account for {staff_username}.", target=staff_username)
                 flash('Staff account deleted successfully.', 'success')
 
         elif action == 'reset_password':
@@ -309,6 +336,7 @@ def manage_staff():
                 staff = StaffUser.query.get_or_404(staff_id)
                 staff.password = new_password.strip()
                 db.session.commit()
+                log_audit('STAFF_MANAGEMENT', f"Reset password for staff username {staff.username}.", target=staff.username)
                 flash(f'Password reset successfully!', 'success')
             
         return redirect(url_for('manage_staff'))
@@ -320,8 +348,10 @@ def manage_staff():
 @app.route('/admin/staff/delete/<int:staff_id>', methods=['POST'])
 def delete_staff(staff_id):
     staff = StaffUser.query.get_or_404(staff_id)
+    staff_username = staff.username
     db.session.delete(staff)
     db.session.commit()
+    log_audit('STAFF_MANAGEMENT', f"Deleted staff account for {staff_username}.", target=staff_username)
     flash('Staff account deleted successfully.', 'success')
     return redirect(url_for('manage_staff'))
 
@@ -346,11 +376,11 @@ def login():
             session['user_id'] = staff.id
             session['username'] = staff.username
             session['role'] = staff.role
+            log_audit('LOGIN', f"User {staff.username} logged in successfully with role {staff.role}.", target=staff.username)
             flash(f'Logged in successfully as {staff.role}', 'success')
             
-            # Smart role-based redirection to their specific page
             role_str = staff.role.lower()
-            if 'head' in role_str or 'hoi' in role_str:
+            if 'head' in role_str or 'hoi' in role_str or 'institution' in role_str:
                 return redirect(url_for('hoi_dashboard'))
             elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
                 return redirect(url_for('ream_dashboard'))
@@ -370,19 +400,16 @@ def hoi_dashboard():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Fetch global system settings for default active period
     setting = SystemSetting.query.first()
     default_year = setting.active_year if setting else '2026'
     default_term = setting.active_term if setting else 'Term 1'
 
-    # Filter parameters from GET request
     selected_year = request.args.get('year', default_year)
     selected_term = request.args.get('term', default_term)
     selected_form = request.args.get('form', 'All')
     selected_stream = request.args.get('stream', 'All')
     selected_status = request.args.get('status', 'All')
 
-    # 1. High-Level Metrics
     total_students = Student.query.filter_by(year=selected_year).count()
     
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
@@ -395,7 +422,6 @@ def hoi_dashboard():
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
 
-    # 2. School-wide Collection Rate Calculation for Active Term/Year (Case-insensitive & string-safe match)
     term_records = ReamRecord.query.filter(
         db.func.lower(ReamRecord.term) == selected_term.lower(),
         ReamRecord.year == str(selected_year)
@@ -405,7 +431,6 @@ def hoi_dashboard():
     total_submitted_count = len(submitted_student_ids)
     school_collection_percentage = round((total_submitted_count / total_students * 100), 1) if total_students > 0 else 0.0
 
-    # 3. Form / Grade Smart Analysis Data
     all_forms = db.session.query(Student.form.distinct()).filter_by(year=selected_year).all()
     form_list = [f[0] for f in all_forms if f[0]]
     form_analysis = []
@@ -422,7 +447,6 @@ def hoi_dashboard():
             'percentage': f_pct
         })
 
-    # 4. Stream Analysis Data
     stream_analysis = []
     streams_query = db.session.query(Student.form, Student.stream).filter_by(year=selected_year).distinct().all()
     unique_form_streams = sorted(list(set(streams_query)))
@@ -442,7 +466,6 @@ def hoi_dashboard():
             'percentage': fs_pct
         })
 
-    # 5. Filtered Student Report Query
     student_query = Student.query.filter_by(year=selected_year)
     if selected_form != 'All':
         student_query = student_query.filter_by(form=selected_form)
@@ -451,7 +474,6 @@ def hoi_dashboard():
     
     filtered_students_raw = student_query.order_by(Student.form, Student.stream, Student.adm_no).all()
     
-    # Process status filter (Submitted vs Pending vs All)
     filtered_report_data = []
     for s in filtered_students_raw:
         is_submitted = s.id in submitted_student_ids
@@ -471,7 +493,6 @@ def hoi_dashboard():
             'status': status_str
         })
 
-    # Available years for filter dropdown
     year_results = db.session.query(Student.year.distinct()).all()
     available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
 
@@ -504,7 +525,6 @@ def ream_dashboard():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Fetch active term and year globally configured by Admin
     setting = SystemSetting.query.first()
     selected_year = setting.active_year if setting else '2026'
     selected_term = setting.active_term if setting else 'Term 1'
@@ -535,25 +555,24 @@ def ream_dashboard():
                         )
                         db.session.add(new_record)
                         db.session.commit()
+                        log_audit('REAM_COLLECTION', f"Marked ream submitted for student {student.full_name} ({selected_term}, {selected_year}).", target=student.full_name)
                         flash(f'Ream marked as submitted for {student.full_name}.', 'success')
                 elif action == 'undo':
                     record = ReamRecord.query.filter_by(student_id=student_id, term=selected_term, year=selected_year).first()
                     if record:
                         db.session.delete(record)
                         db.session.commit()
+                        log_audit('REAM_COLLECTION', f"Undid ream submission for student {student.full_name} ({selected_term}, {selected_year}).", target=student.full_name)
                         flash(f'Submission undone for {student.full_name}.', 'info')
                         
         return redirect(url_for('ream_dashboard', page=page))
 
-    # Pagination: exactly 15 students per page matching the active year
     pagination = Student.query.filter_by(year=selected_year).order_by(Student.adm_no).paginate(page=page, per_page=15, error_out=False)
     students = pagination.items
 
-    # Fetch ream records for these 15 students
     student_ids = [s.id for s in students]
     records = ReamRecord.query.filter(ReamRecord.student_id.in_(student_ids), ReamRecord.year==selected_year).all()
     
-    # Map statuses for all 3 terms per student
     ream_statuses = {s.id: {'Term 1': False, 'Term 2': False, 'Term 3': False} for s in students}
     for r in records:
         if r.student_id in ream_statuses and r.term in ream_statuses[r.student_id]:
@@ -594,17 +613,12 @@ def exam_office():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # 1. Calculate total reams collected in store
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
 
-    # Calculate total sheets already requested/taken from store
     total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
-    
-    # Ensure available store sheets never drop below 0
     available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
 
-    # Calculate current undisbursed loose leftover sheets across requests
     total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
@@ -612,12 +626,10 @@ def exam_office():
     if request.method == 'POST':
         action = request.form.get('action')
 
-        # Guardrail 1: Check if any ream is collected yet
         if total_reams_collected <= 0:
             flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
             return redirect(url_for('exam_office'))
 
-        # Guardrail 2: Check if active loose sheets exceed 20
         if action == 'request_reams' and active_loose_sheets > 20:
             flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
             return redirect(url_for('exam_office'))
@@ -631,17 +643,13 @@ def exam_office():
             sheets_per_student = int(request.form.get('sheets_per_student'))
 
             raw_needed = num_students * sheets_per_student
-
-            # Apply custom padding rule
             padding = 60 if raw_needed <= 250 else 50
             total_needed_with_padding = raw_needed + padding
 
-            # Guardrail 3: Check if requesting more than available store sheets
             if total_needed_with_padding > available_store_sheets:
                 flash("REQUESTING MORE THAN IS AVAILABLE IN THE STORE.", "error")
                 return redirect(url_for('exam_office'))
 
-            # Calculate reams and loose leftover sheets
             reams_to_take = total_needed_with_padding // 500
             loose_leftover = total_needed_with_padding % 500
 
@@ -659,6 +667,7 @@ def exam_office():
             )
             db.session.add(new_req)
             db.session.commit()
+            log_audit('EXAM_REQUEST', f"Exam ream request created for {subject} ({target_form} {stream}) - {total_needed_with_padding} sheets.", target=subject)
             flash("Exam ream request verified and recorded successfully!", "success")
             return redirect(url_for('exam_office'))
 
@@ -671,7 +680,6 @@ def exam_office():
             sheets_per_student = int(request.form.get('sheets_per_student'))
             disbursed_total = num_students * sheets_per_student
 
-            # Guardrail: Prevent disbursing more loose sheets than are currently active/available
             if disbursed_total > active_loose_sheets:
                 flash(f"DISBURSEMENT DENIED: Cannot disburse {disbursed_total} sheets. You only have {active_loose_sheets} active loose leftover sheets available.", "error")
                 return redirect(url_for('exam_office'))
@@ -687,6 +695,7 @@ def exam_office():
             )
             db.session.add(new_disb)
             db.session.commit()
+            log_audit('SHEET_DISBURSEMENT', f"Disbursed {disbursed_total} loose sheets for {subject} ({target_form} {stream}).", target=subject)
             flash("Loose leftover sheets disbursed successfully!", "success")
             return redirect(url_for('exam_office'))
 
@@ -702,6 +711,7 @@ def exam_office():
         active_loose_sheets=active_loose_sheets
     )
 
+
 @app.route('/audit-logs')
 def audit_logs():
     if 'user_id' not in session:
@@ -709,14 +719,15 @@ def audit_logs():
         return redirect(url_for('login'))
 
     try:
-        # Force table creation in case it's missing on Render's persistent disk
         db.create_all()
 
         if AuditLog.query.count() == 0:
             initial_log = AuditLog(
                 action_type='SYSTEM_INIT',
                 username=session.get('username', 'Admin'),
-                details='Audit log table initialized and active.'
+                target='Database',
+                details='Audit log table initialized and active.',
+                ip_address=request.remote_addr if request else None
             )
             db.session.add(initial_log)
             db.session.commit()
@@ -746,19 +757,12 @@ def audit_logs():
 
     except Exception as e:
         db.session.rollback()
-        # This will render the exact Python exception on your screen so we can see the root cause immediately
-        return f"""
-        <div style="font-family: monospace; padding: 40px; background: #fee2e2; color: #991b1b; border: 2px solid #f87171; border-radius: 8px; margin: 20px;">
-            <h2 style="margin-top: 0;">Root Cause Exception Caught:</h2>
-            <p><strong>Error Type:</strong> {type(e).__name__}</p>
-            <p><strong>Error Details:</strong> {str(e)}</p>
-            <hr style="border-color: #fca5a5; margin: 20px 0;">
-            <p>Check your terminal or Render logs for traceback details. This happens if the database schema is out of sync or `models.py` doesn't define `AuditLog` properly.</p>
-        </div>
-        """, 500
+        return f"Database Error: {str(e)}", 500
+
 
 @app.route('/logout')
 def logout():
+    log_audit('LOGOUT', f"User {session.get('username', 'Unknown')} logged out.", target='Session')
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
