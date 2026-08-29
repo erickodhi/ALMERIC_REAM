@@ -468,15 +468,17 @@ def exam_office():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # 1. Calculate total reams collected in store (adjust query to match your Ream Collection model)
+    # 1. Calculate total reams collected in store
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
 
     # Calculate total sheets already requested/taken from store
     total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
-    available_store_sheets = total_store_sheets - total_sheets_requested
+    
+    # Ensure available store sheets never drop below 0
+    available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
 
-    # Calculate current undiburse loose leftover sheets across requests
+    # Calculate current undisbursed loose leftover sheets across requests
     total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
