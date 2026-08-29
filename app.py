@@ -11,7 +11,7 @@ from flask import (
     url_for,
     session,
 )
-from models import Form, Student, Stream, StaffUser, ReamRecord, db
+from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, db
 
 app = Flask(__name__)
 
@@ -30,10 +30,27 @@ with app.app_context():
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
+    # Ensure system setting exists
+    system_setting = SystemSetting.query.first()
+    if not system_setting:
+        system_setting = SystemSetting(active_year='2026', active_term='Term 1')
+        db.session.add(system_setting)
+        db.session.commit()
+
     if request.method == 'POST':
         action = request.form.get('action')
         
-        if action == 'add_form':
+        if action == 'set_active_period':
+            active_year = request.form.get('active_year')
+            active_term = request.form.get('active_term')
+            if active_year and active_term:
+                system_setting.active_year = active_year.strip()
+                system_setting.active_term = active_term.strip()
+                db.session.commit()
+                flash(f'Active collection period locked to {active_term}, {active_year} successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
+
+        elif action == 'add_form':
             form_name = request.form.get('form_name')
             if form_name:
                 existing = Form.query.filter_by(name=form_name).first()
@@ -104,7 +121,8 @@ def admin_dashboard():
         forms=forms, 
         students=students, 
         available_years=available_years, 
-        selected_year=selected_year
+        selected_year=selected_year,
+        system_setting=system_setting
     )
 
 
@@ -357,10 +375,12 @@ def ream_dashboard():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    selected_year = request.args.get('year', '2026')
-    selected_term = request.args.get('term', 'Term 1')
+    # Fetch active term and year globally configured by Admin
+    setting = SystemSetting.query.first()
+    selected_year = setting.active_year if setting else '2026'
+    selected_term = setting.active_term if setting else 'Term 1'
+    
     page = request.args.get('page', 1, type=int)
-
     term_map = {'Term 1': 1, 'Term 2': 2, 'Term 3': 3}
 
     if request.method == 'POST':
@@ -394,9 +414,9 @@ def ream_dashboard():
                         db.session.commit()
                         flash(f'Submission undone for {student.full_name}.', 'info')
                         
-        return redirect(url_for('ream_dashboard', year=selected_year, term=selected_term, page=page))
+        return redirect(url_for('ream_dashboard', page=page))
 
-    # Pagination: exactly 15 students per page
+    # Pagination: exactly 15 students per page matching the active year
     pagination = Student.query.filter_by(year=selected_year).order_by(Student.adm_no).paginate(page=page, per_page=15, error_out=False)
     students = pagination.items
 

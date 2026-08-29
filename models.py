@@ -60,3 +60,8 @@ class ReamRecord(db.Model):
     received_by = db.Column(db.String(100), nullable=False) # Staff username
 
     student = db.relationship('Student', backref=db.backref('ream_records', lazy=True))
+
+class SystemSetting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    active_year = db.Column(db.String(10), default='2026')
+    active_term = db.Column(db.String(20), default='Term 1')
