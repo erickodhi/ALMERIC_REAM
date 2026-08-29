@@ -719,6 +719,9 @@ def audit_logs():
     if selected_user != 'All':
         query = query.filter_by(username=selected_user)
         
+
+
+        
     logs = query.order_by(AuditLog.timestamp.desc()).all()
     
     # Fallback debug message if no records are found in the database table
