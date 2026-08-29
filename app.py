@@ -11,7 +11,7 @@ from flask import (
     url_for,
     session,
 )
-from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, ExamRequest, SheetDisbursement, db
+from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, ExamRequest, SheetDisbursement, AuditLog, db
 from flask_login import login_required
 
 app = Flask(__name__)
