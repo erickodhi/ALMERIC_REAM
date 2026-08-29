@@ -708,9 +708,11 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Always ensure at least one log exists so dropdowns have data
-    if AuditLog.query.count() == 0:
-        try:
+    try:
+        # Force table creation in case it's missing on Render's persistent disk
+        db.create_all()
+
+        if AuditLog.query.count() == 0:
             initial_log = AuditLog(
                 action_type='SYSTEM_INIT',
                 username=session.get('username', 'Admin'),
@@ -718,36 +720,42 @@ def audit_logs():
             )
             db.session.add(initial_log)
             db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error seeding initial log: {e}")
 
-    selected_action = request.args.get('action', 'All')
-    selected_user = request.args.get('user', 'All')
-    
-    query = AuditLog.query
-    
-    if selected_action and selected_action != 'All':
-        query = query.filter_by(action_type=selected_action)
-    if selected_user and selected_user != 'All':
-        query = query.filter_by(username=selected_user)
+        selected_action = request.args.get('action', 'All')
+        selected_user = request.args.get('user', 'All')
         
-    logs = query.order_by(AuditLog.timestamp.desc()).all()
-    
-    # Safely fetch distinct filters handling potential SQLite column quirks
-    actions_raw = db.session.query(AuditLog.action_type).distinct().all()
-    actions = [row[0] for row in actions_raw if row[0]]
+        query = AuditLog.query
+        
+        if selected_action and selected_action != 'All':
+            query = query.filter_by(action_type=selected_action)
+        if selected_user and selected_user != 'All':
+            query = query.filter_by(username=selected_user)
+            
+        logs = query.order_by(AuditLog.timestamp.desc()).all()
+        
+        actions = [row[0] for row in db.session.query(AuditLog.action_type).distinct().all() if row[0]]
+        usernames = [row[0] for row in db.session.query(AuditLog.username).distinct().all() if row[0]]
 
-    usernames_raw = db.session.query(AuditLog.username).distinct().all()
-    usernames = [row[0] for row in usernames_raw if row[0]]
-    
-    return render_template('audit_logs.html',
-                           username=session.get('username', 'Admin'),
-                           logs=logs,
-                           actions=actions,
-                           usernames=usernames,
-                           selected_action=selected_action,
-                           selected_user=selected_user)
+        return render_template('audit_logs.html',
+                               username=session.get('username', 'Admin'),
+                               logs=logs,
+                               actions=actions,
+                               usernames=usernames,
+                               selected_action=selected_action,
+                               selected_user=selected_user)
+
+    except Exception as e:
+        db.session.rollback()
+        # This will render the exact Python exception on your screen so we can see the root cause immediately
+        return f"""
+        <div style="font-family: monospace; padding: 40px; background: #fee2e2; color: #991b1b; border: 2px solid #f87171; border-radius: 8px; margin: 20px;">
+            <h2 style="margin-top: 0;">Root Cause Exception Caught:</h2>
+            <p><strong>Error Type:</strong> {type(e).__name__}</p>
+            <p><strong>Error Details:</strong> {str(e)}</p>
+            <hr style="border-color: #fca5a5; margin: 20px 0;">
+            <p>Check your terminal or Render logs for traceback details. This happens if the database schema is out of sync or `models.py` doesn't define `AuditLog` properly.</p>
+        </div>
+        """, 500
 
 @app.route('/logout')
 def logout():
