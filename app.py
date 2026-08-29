@@ -708,7 +708,7 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Auto-seed a test log entry if the table is completely empty so filters populate
+    # Always ensure at least one log exists so dropdowns have data
     if AuditLog.query.count() == 0:
         try:
             initial_log = AuditLog(
@@ -727,16 +727,19 @@ def audit_logs():
     
     query = AuditLog.query
     
-    if selected_action != 'All':
+    if selected_action and selected_action != 'All':
         query = query.filter_by(action_type=selected_action)
-    if selected_user != 'All':
+    if selected_user and selected_user != 'All':
         query = query.filter_by(username=selected_user)
         
     logs = query.order_by(AuditLog.timestamp.desc()).all()
     
-    # Corrected extraction for filter dropdowns (querying db.session.query(AuditLog.column))
-    actions = [r[0] for r in db.session.query(AuditLog.action_type).distinct().all() if r[0]]
-    usernames = [r[0] for r in db.session.query(AuditLog.username).distinct().all() if r[0]]
+    # Safely fetch distinct filters handling potential SQLite column quirks
+    actions_raw = db.session.query(AuditLog.action_type).distinct().all()
+    actions = [row[0] for row in actions_raw if row[0]]
+
+    usernames_raw = db.session.query(AuditLog.username).distinct().all()
+    usernames = [row[0] for row in usernames_raw if row[0]]
     
     return render_template('audit_logs.html',
                            username=session.get('username', 'Admin'),
