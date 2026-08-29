@@ -129,79 +129,86 @@
                 </div>
             </div>
 
-            <!-- Form / Grade Smart Analysis Table -->
-            <div class="content-box">
-                <h4 class="mb-3 text-secondary"><i class="fas fa-layer-group me-2"></i> Form & Grade Smart Analysis</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Form / Grade</th>
-                                <th>Total Enrolled</th>
-                                <th>Submitted Count</th>
-                                <th style="width: 40%;">Collection Progress Bar</th>
-                                <th>Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for f in form_analysis %}
-                            <tr>
-                                <td class="fw-bold">{{ f.form }}</td>
-                                <td>{{ f.total }}</td>
-                                <td><span class="badge bg-success">{{ f.submitted }}</span></td>
-                                <td>
-                                    <div class="progress" style="height: 15px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ f.percentage }}%;"></div>
-                                    </div>
-                                </td>
-                                <td class="fw-bold text-primary">{{ f.percentage }}%</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">No student records found for {{ selected_year }}.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Form & Stream Side-by-Side Analysis Row -->
+            <div class="row g-4 mb-4">
+                <!-- Form / Grade Smart Analysis Table -->
+                <div class="col-lg-6">
+                    <div class="content-box h-100 mb-0">
+                        <h4 class="mb-3 text-secondary"><i class="fas fa-layer-group me-2"></i> Form & Grade Smart Analysis</h4>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Form / Grade</th>
+                                        <th>Total</th>
+                                        <th>Submitted</th>
+                                        <th style="width: 30%;">Progress</th>
+                                        <th>%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for f in form_analysis %}
+                                    <tr>
+                                        <td class="fw-bold">{{ f.form }}</td>
+                                        <td>{{ f.total }}</td>
+                                        <td><span class="badge bg-success">{{ f.submitted }}</span></td>
+                                        <td>
+                                            <div class="progress" style="height: 12px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ f.percentage }}%;"></div>
+                                            </div>
+                                        </td>
+                                        <td class="fw-bold text-primary small">{{ f.percentage }}%</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">No student records found for {{ selected_year }}.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Stream Analysis Table -->
-            <div class="content-box">
-                <h4 class="mb-3 text-secondary"><i class="fas fa-stream me-2"></i> Stream-Level Collection Analysis</h4>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Form / Grade</th>
-                                <th>Stream</th>
-                                <th>Total Enrolled</th>
-                                <th>Submitted Count</th>
-                                <th style="width: 35%;">Progress Bar</th>
-                                <th>Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for st in stream_analysis %}
-                            <tr>
-                                <td class="fw-bold">{{ st.form }}</td>
-                                <td>{{ st.stream }}</td>
-                                <td>{{ st.total }}</td>
-                                <td><span class="badge bg-success">{{ st.submitted }}</span></td>
-                                <td>
-                                    <div class="progress" style="height: 15px;">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ st.percentage }}%;"></div>
-                                    </div>
-                                </td>
-                                <td class="fw-bold text-info">{{ st.percentage }}%</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-3">No stream records found.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <!-- Stream Analysis Table -->
+                <div class="col-lg-6">
+                    <div class="content-box h-100 mb-0">
+                        <h4 class="mb-3 text-secondary"><i class="fas fa-stream me-2"></i> Stream-Level Analysis</h4>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Form</th>
+                                        <th>Stream</th>
+                                        <th>Total</th>
+                                        <th>Submitted</th>
+                                        <th style="width: 25%;">Progress</th>
+                                        <th>%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for st in stream_analysis %}
+                                    <tr>
+                                        <td class="fw-bold">{{ st.form }}</td>
+                                        <td>{{ st.stream }}</td>
+                                        <td>{{ st.total }}</td>
+                                        <td><span class="badge bg-success">{{ st.submitted }}</span></td>
+                                        <td>
+                                            <div class="progress" style="height: 12px;">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ st.percentage }}%;"></div>
+                                            </div>
+                                        </td>
+                                        <td class="fw-bold text-info small">{{ st.percentage }}%</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3">No stream records found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
