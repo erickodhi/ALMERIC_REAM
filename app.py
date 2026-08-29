@@ -1,6 +1,3 @@
-import csv
-import io
-import os
 from flask import (
     Flask,
     Response,
@@ -12,7 +9,6 @@ from flask import (
     session,
 )
 from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, ExamRequest, SheetDisbursement, AuditLog, db
-from flask_login import login_required
 
 app = Flask(__name__)
 
@@ -703,12 +699,16 @@ def exam_office():
         active_loose_sheets=active_loose_sheets
     )
 
-# Add this route to your Flask application backend
+# Updated audit-logs route using regular Flask session instead of flask_login
 @app.route('/audit-logs')
-@login_required
 def audit_logs():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     # Ensure only authorized admin/HOI users can view logs
-    if session.get('role') not in ['Admin', 'HOI', 'Principal']:
+    user_role = session.get('role', '')
+    if user_role not in ['Admin', 'HOI', 'Principal'] and 'head' not in user_role.lower():
         flash('Unauthorized access to audit logs.', 'danger')
         return redirect(url_for('hoi_dashboard'))
     
