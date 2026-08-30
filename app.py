@@ -810,8 +810,50 @@ def audit_logs():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
         
-    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(200).all()
-    return render_template('audit_logs.html', audit_logs=logs)
+    # Fetch filter parameters from GET request
+    selected_action = request.args.get('action', 'All')
+    selected_user = request.args.get('user', 'All')
+    page = request.args.get('page', 1, type=int)
+    
+    # Base query for audit logs
+    query = AuditLog.query
+    
+    if selected_action != 'All':
+        query = query.filter_by(action_type=selected_action)
+    if selected_user != 'All':
+        query = query.filter_by(username=selected_user)
+        
+    # Pagination for logs
+    pagination = query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=15, error_out=False)
+    logs = pagination.items
+    
+    # Fetch distinct action types and usernames for dropdown filters
+    actions = [row[0] for row in db.session.query(AuditLog.action_type.distinct()).all() if row[0]]
+    usernames = [row[0] for row in db.session.query(AuditLog.username.distinct()).all() if row[0]]
+    
+    # Fetch sheet disbursements history
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
+    
+    return render_template(
+        'audit_logs.html',
+        username=session.get('username'),
+        logs=logs,
+        pagination=pagination,
+        actions=actions,
+        usernames=usernames,
+        selected_action=selected_action,
+        selected_user=selected_user,
+        disbursements=disbursements
+    )
+
+#@app.route('/admin/audit-logs')
+#def audit_logs():
+   # if 'user_id' not in session:
+       # flash('Please log in first.', 'warning')
+       # return redirect(url_for('login'))
+        
+   # logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(200).all()
+   # return render_template('audit_logs.html', audit_logs=logs)
 
 if __name__ == '__main__':
     app.run(debug=True)
