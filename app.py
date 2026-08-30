@@ -726,7 +726,6 @@ def exam_office():
             num_students = int(request.form.get('num_students'))
             sheets_per_student = int(request.form.get('sheets_per_student'))
 
-            # === PUT THE NEW LOGIC HERE ===
             raw_needed = num_students * sheets_per_student
             padding = 60 if raw_needed <= 250 else 50
             total_needed_with_padding = raw_needed + padding
@@ -737,7 +736,6 @@ def exam_office():
 
             reams_to_take = math.ceil(total_needed_with_padding / 500)
             loose_leftover = (reams_to_take * 500) - total_needed_with_padding
-            # ===============================
 
             new_req = ExamRequest(
                 subject=subject,
@@ -756,6 +754,20 @@ def exam_office():
             log_audit('EXAM_REQUEST', f'Requested {total_needed_with_padding} sheets for exam: {subject} ({target_form} {stream})', target=subject)
             flash("Exam ream request successfully submitted.", "success")
             return redirect(url_for('exam_office'))
+
+    exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
+    
+    return render_template(
+        'examination_office.html',
+        role="Examination Office",
+        username=session.get('username'),
+        total_store_sheets=available_store_sheets,
+        available_store_sheets=available_store_sheets,
+        active_loose_sheets=active_loose_sheets,
+        exam_requests=exam_requests
+    )
+
+
 @app.route('/admin/audit-logs')
 def audit_logs():
     if 'user_id' not in session:
