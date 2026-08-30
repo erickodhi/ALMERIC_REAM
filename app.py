@@ -791,12 +791,41 @@ def audit_logs():
             db.session.add(initial_log)
             db.session.commit()
 
-        logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
+        # Get filter parameters from request args
+        selected_action = request.args.get('action', 'All')
+        selected_user = request.args.get('user', 'All')
+
+        # Fetch unique actions and usernames for dropdowns
+        actions_query = db.session.query(AuditLog.action_type.distinct()).all()
+        actions = sorted([a[0] for a in actions_query if a[0]])
+
+        usernames_query = db.session.query(AuditLog.username.distinct()).all()
+        usernames = sorted([u[0] for u in usernames_query if u[0]])
+
+        # Build query with filters
+        query = AuditLog.query
+        if selected_action and selected_action != 'All':
+            query = query.filter_by(action_type=selected_action)
+        if selected_user and selected_user != 'All':
+            query = query.filter_by(username=selected_user)
+
+        logs = query.order_by(AuditLog.timestamp.desc()).all()
     except Exception as e:
         flash(f'Error loading audit logs: {str(e)}', 'danger')
         logs = []
+        actions = []
+        usernames = []
+        selected_action = 'All'
+        selected_user = 'All'
 
-    return render_template('audit_logs.html', logs=logs)
+    return render_template(
+        'audit_logs.html', 
+        logs=logs, 
+        actions=actions, 
+        usernames=usernames, 
+        selected_action=selected_action, 
+        selected_user=selected_user
+    )
 
 
 if __name__ == '__main__':
