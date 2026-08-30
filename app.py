@@ -825,4 +825,4 @@ if __name__ == '__main__':
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin account created: username 'admin' with password 'adminpassword123'")
-    app.run(debug=True)
+app.run(debug=True)
