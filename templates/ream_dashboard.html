@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ream Collection Desk - ALMERIC REAM</title>
+    <title>Ream Collection Desk - ALMERIC REAM MATRIX </title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
@@ -76,6 +76,23 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
+
+            <!-- SEARCH BAR -->
+            <form method="GET" action="{{ url_for('ream_dashboard') }}" class="flex items-center gap-2">
+                <input type="hidden" name="year" value="{{ selected_year }}">
+                <input type="hidden" name="term" value="{{ selected_term }}">
+                <div class="w-full sm:w-80">
+                    <input type="text" name="search" class="w-full px-3 py-2 border rounded-lg border-slate-300 text-xs bg-white shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search by Adm No or Full Name..." value="{{ search_query }}">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
+                    Search
+                </button>
+                {% if search_query %}
+                    <a href="{{ url_for('ream_dashboard') }}" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition">
+                        Clear
+                    </a>
+                {% endif %}
+            </form>
 
             <!-- TABLE CONTAINER -->
             <div class="bg-white rounded-xl shadow-xs border border-slate-200 flex-1 flex flex-col overflow-hidden">
@@ -150,7 +167,7 @@
                                             {% if is_exempt %}
                                                 <span class="inline-block px-2.5 py-1 rounded bg-slate-100 text-slate-400 text-[11px] font-medium tracking-wide">Exempted</span>
                                             {% else %}
-                                                <form action="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.page) }}" method="POST" class="inline">
+                                                <form action="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.page, search=search_query) }}" method="POST" class="inline">
                                                     <input type="hidden" name="student_id" value="{{ s.id }}">
                                                     {% if is_submitted %}
                                                         <input type="hidden" name="action" value="undo">
@@ -171,7 +188,11 @@
                             {% else %}
                                 <tr>
                                     <td colspan="8" class="py-12 text-center text-slate-400 text-sm">
-                                        No student records available for academic year {{ selected_year }}.
+                                        {% if search_query %}
+                                            No student records found matching "{{ search_query }}".
+                                        {% else %}
+                                            No student records available for academic year {{ selected_year }}.
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endif %}
@@ -186,7 +207,7 @@
                     </span>
                     <div class="flex space-x-2">
                         {% if pagination.has_prev %}
-                            <a href="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.prev_num) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium transition shadow-2xs">
+                            <a href="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.prev_num, search=search_query) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium transition shadow-2xs">
                                 &larr; Previous
                             </a>
                         {% else %}
@@ -196,7 +217,7 @@
                         {% endif %}
 
                         {% if pagination.has_next %}
-                            <a href="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.next_num) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium transition shadow-2xs">
+                            <a href="{{ url_for('ream_dashboard', year=selected_year, term=selected_term, page=pagination.next_num, search=search_query) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-medium transition shadow-2xs">
                                 Next &rarr;
                             </a>
                         {% else %}

@@ -620,7 +620,7 @@ def hoi_dashboard():
         disbursements=disbursements
     )
 
-
+"""
 @app.route('/portal/ream', methods=['GET', 'POST'])
 def ream_dashboard():
     if 'user_id' not in session:
@@ -692,6 +692,88 @@ def ream_dashboard():
         selected_term=selected_term
     )
 
+"""
+@app.route('/portal/ream', methods=['GET', 'POST'])
+def ream_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
+    setting = SystemSetting.query.first()
+    selected_year = setting.active_year if setting else '2026'
+    selected_term = setting.active_term if setting else 'Term 1'
+    
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('search', '').strip()
+    term_map = {'Term 1': 1, 'Term 2': 2, 'Term 3': 3}
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        student_id = request.form.get('student_id')
+        
+        student = Student.query.get(student_id)
+        if student:
+            student_term_num = term_map.get(student.enrollment_term, 1)
+            current_term_num = term_map.get(selected_term, 1)
+            is_exempt = current_term_num < student_term_num
+
+            if not is_exempt:
+                if action == 'submit':
+                    existing = ReamRecord.query.filter_by(student_id=student_id, term=selected_term, year=selected_year).first()
+                    if not existing:
+                        new_record = ReamRecord(
+                            student_id=student_id,
+                            term=selected_term,
+                            year=selected_year,
+                            reams_count=1,
+                            received_by=session.get('username')
+                        )
+                        db.session.add(new_record)
+                        db.session.commit()
+                        log_audit('REAM_COLLECTION', f"Marked ream submitted for student {student.full_name} ({selected_term}, {selected_year}).", target=student.full_name)
+                        flash(f'Ream marked as submitted for {student.full_name}.', 'success')
+                elif action == 'undo':
+                    record = ReamRecord.query.filter_by(student_id=student_id, term=selected_term, year=selected_year).first()
+                    if record:
+                        db.session.delete(record)
+                        db.session.commit()
+                        log_audit('REAM_UNDO', f"Undid ream submission for student {student.full_name} ({selected_term}, {selected_year}).", target=student.full_name)
+                        flash(f'Submission undone for {student.full_name}.', 'info')
+                        
+        return redirect(url_for('ream_dashboard', page=page, search=search_query))
+
+    student_query = Student.query.filter_by(year=selected_year)
+    if search_query:
+        student_query = student_query.filter(
+            db.or_(
+                Student.adm_no.ilike(f"%{search_query}%"),
+                Student.full_name.ilike(f"%{search_query}%")
+            )
+        )
+
+    pagination = student_query.order_by(Student.adm_no).paginate(page=page, per_page=15, error_out=False)
+    students = pagination.items
+
+    student_ids = [s.id for s in students]
+    records = ReamRecord.query.filter(ReamRecord.student_id.in_(student_ids), ReamRecord.year==selected_year).all() if student_ids else []
+    
+    ream_statuses = {s.id: {'Term 1': False, 'Term 2': False, 'Term 3': False} for s in students}
+    for r in records:
+        if r.student_id in ream_statuses and r.term in ream_statuses[r.student_id]:
+            ream_statuses[r.student_id][r.term] = True
+
+    return render_template(
+        'ream_dashboard.html',
+        role="Ream Collection Desk",
+        username=session.get('username'),
+        pagination=pagination,
+        students=students,
+        ream_statuses=ream_statuses,
+        term_map=term_map,
+        selected_year=selected_year,
+        selected_term=selected_term,
+        search_query=search_query
+    )
 
 @app.route('/portal/exam')
 def exam_dashboard():
