@@ -781,6 +781,7 @@ def hoi_dashboard():
         total_students=total_students,
         expected_reams_count=expected_reams_count,
         exempted_count=exempted_count,
+        total_reams_collected=total_reams_collected,
         available_store_reams=available_store_reams,
         active_loose_sheets=active_loose_sheets,
         total_submitted_count=total_submitted_count,
