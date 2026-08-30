@@ -79,49 +79,50 @@
             {% endwith %}
 
             <!-- KPI Metric Cards -->
-            <div class="flex flex-nowrap overflow-x-auto gap-4 mb-6 pb-2 w-full">
+            <div style="display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 1rem;" class="mb-4 pb-2 w-full">
 
                 <!-- Card 1: Active Students -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Students</p>
-                    <h3 class="text-xl font-bold text-slate-800 mt-1">{{ total_students }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Enrolled for {{ selected_year }}</p>
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-blue-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Active Students</div>
+                    <div class="h3 font-weight-bold text-slate-800 mt-2 text-xl">{{ total_students }}</div>
+                    <small class="text-slate-400 text-[11px]">Enrolled for {{ selected_year }}</small>
                 </div>
 
                 <!-- Card 2: Expected Reams -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-indigo-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Expected ({{ selected_term }})</p>
-                    <h3 class="text-xl font-bold text-indigo-600 mt-1">{{ expected_reams_count }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Liable for this term</p>
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-indigo-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Expected ({{ selected_term }})</div>
+                    <div class="h3 font-weight-bold text-indigo-600 mt-2 text-xl">{{ expected_reams_count }}</div>
+                    <small class="text-slate-400 text-[11px]">Liable for this term</small>
                 </div>
 
                 <!-- Card 3: Exempted Students -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-amber-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Exempted</p>
-                    <h3 class="text-xl font-bold text-amber-600 mt-1">{{ exempted_count }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Joined in a later term</p>
-                </div> 
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-amber-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Exempted</div>
+                    <div class="h3 font-weight-bold text-amber-600 mt-2 text-xl">{{ exempted_count }}</div>
+                    <small class="text-slate-400 text-[11px]">Joined in later term</small>
+                </div>
 
                 <!-- Card 4: Total Reams Collected -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-emerald-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Reams Collected</p>
-                    <h3 class="text-xl font-bold text-emerald-600 mt-1">{{ total_reams_collected }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Equivalent to {{ total_reams_collected * 500 }} sheets</p>
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-emerald-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Total Collected</div>
+                    <div class="h3 font-weight-bold text-emerald-600 mt-2 text-xl">{{ total_reams_collected }}</div>
+                    <small class="text-slate-400 text-[11px]">Eq. {{ total_reams_collected * 500 }} sheets</small>
                 </div>
 
                 <!-- Card 5: Available Reams in Store -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-yellow-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available in Store</p>
-                    <h3 class="text-xl font-bold text-yellow-600 mt-1">{{ available_store_reams }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Ready for exam allocation</p>
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-yellow-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Store Reams</div>
+                    <div class="h3 font-weight-bold text-yellow-600 mt-2 text-xl">{{ available_store_reams }}</div>
+                    <small class="text-slate-400 text-[11px]">Ready for allocation</small>
                 </div>
 
                 <!-- Card 6: Active Loose Leftovers -->
-                <div class="bg-white p-4 rounded-xl border-l-4 border-l-cyan-500 border border-slate-200 shadow-xs flex-1 min-w-[200px]">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Loose Leftovers</p>
-                    <h3 class="text-xl font-bold text-cyan-600 mt-1">{{ active_loose_sheets }}</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Available for office disbursement</p>
+                <div class="bg-white p-3 rounded-xl border-l-4 border-l-cyan-500 border border-slate-200 shadow-xs" style="flex: 0 0 190px;">
+                    <div class="text-slate-500 small text-uppercase fw-bold text-xs">Loose Leftovers</div>
+                    <div class="h3 font-weight-bold text-cyan-600 mt-2 text-xl">{{ active_loose_sheets }}</div>
+                    <small class="text-slate-400 text-[11px]">Office disbursement</small>
                 </div>
+
             </div>
             <!-- School-Wide Collection Progress Card -->
             <div class="content-box">
