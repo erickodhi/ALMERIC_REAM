@@ -107,19 +107,19 @@ def login():
             session['user_id'] = staff.id
             session['username'] = staff.username
             session['role'] = staff.role
+            
             log_audit('USER_LOGIN', f'User {staff.username} logged in successfully as {staff.role}', target=staff.username)
             flash(f'Logged in successfully as {staff.role}', 'success')
             
-            # Smart role-based redirection mapping your exact official staff roles
-            role_str = staff.role.lower()
+            # Safe role checking
+            role_str = str(staff.role).strip().lower()
+            
             if 'admin' in role_str:
                 return redirect(url_for('admin_dashboard'))
-            elif 'head of institution' in role_str or 'head' in role_str or 'hoi' in role_str or 'principal' in role_str:
+            elif any(x in role_str for x in ['head', 'hoi', 'principal', 'institution']):
                 return redirect(url_for('hoi_dashboard'))
-            elif 'examination office' in role_str or 'exam' in role_str:
+            elif any(x in role_str for x in ['exam', 'examination']):
                 return redirect(url_for('exam_office'))
-            elif 'ream collection desk' in role_str or 'ream' in role_str or 'collection' in role_str:
-                return redirect(url_for('ream_dashboard'))
             else:
                 return redirect(url_for('ream_dashboard'))
         else:
