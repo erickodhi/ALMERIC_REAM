@@ -715,17 +715,6 @@ def exam_office():
             flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
             return redirect(url_for('exam_office'))
 
-        if action == 'request_reams' and active_loose_sheets > 20:
-            flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
-            return redirect(url_for('exam_office'))
-
-        if request.method == 'POST':
-        action = request.form.get('action')
-
-        if total_reams_collected <= 0:
-            flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
-            return redirect(url_for('exam_office'))
-
         # === HANDLER 1: REQUEST REAMS ===
         if action == 'request_reams':
             if active_loose_sheets > 20:
@@ -808,7 +797,6 @@ def exam_office():
         active_loose_sheets=active_loose_sheets,
         exam_requests=exam_requests
     )
-
 
 @app.route('/admin/audit-logs')
 def audit_logs():
