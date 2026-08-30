@@ -79,14 +79,15 @@ def log_audit(action_type, details, target="System"):
 def index():
     if 'user_id' in session:
         role_str = str(session.get('role', '')).lower()
-        if 'head' in role_str or 'hoi' in role_str:
+        if 'admin' in role_str:
+            return redirect(url_for('admin_dashboard'))
+        elif 'head' in role_str or 'hoi' in role_str:
             return redirect(url_for('hoi_dashboard'))
         elif 'exam' in role_str:
             return redirect(url_for('exam_office'))
         else:
             return redirect(url_for('ream_dashboard'))
     return redirect(url_for('login'))
-
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
