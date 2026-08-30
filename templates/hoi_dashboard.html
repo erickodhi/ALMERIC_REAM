@@ -214,11 +214,13 @@
                                 <td>{{ row.stream }}</td>
                                 <td>{{ row.gender }}</td>
                                 <td>
-                                    {% if row.status == 'Submitted' %}
-                                    <span class="badge bg-success">Submitted</span>
-                                    {% else %}
-                                    <span class="badge bg-warning text-dark">Pending</span>
-                                    {% endif %}
+                                  {% if row.status == 'Submitted' %}
+                                  <span class="badge bg-success">Submitted</span>
+                                  {% elif row.status == 'Exempted' or row.status == 'Exempt' %}
+                                  <span class="badge bg-warning text-dark">Exempted</span>
+                                  {% else %}
+                                  <span class="badge bg-danger">Pending</span>
+                                  {% endif %}
                                 </td>
                             </tr>
                             {% else %}
