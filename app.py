@@ -81,13 +81,62 @@ def index():
         role_str = str(session.get('role', '')).lower()
         if 'admin' in role_str:
             return redirect(url_for('admin_dashboard'))
-        elif 'head' in role_str or 'hoi' in role_str:
+        elif 'head of institution' in role_str or 'head' in role_str or 'hoi' in role_str or 'principal' in role_str:
             return redirect(url_for('hoi_dashboard'))
-        elif 'exam' in role_str:
+        elif 'examination office' in role_str or 'exam' in role_str:
             return redirect(url_for('exam_office'))
         else:
             return redirect(url_for('ream_dashboard'))
     return redirect(url_for('login'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username:
+            username = username.strip()
+        if password:
+            password = password.strip()
+            
+        staff = StaffUser.query.filter_by(username=username, password=password).first()
+        if staff:
+            session.clear()  
+            session['user_id'] = staff.id
+            session['username'] = staff.username
+            session['role'] = staff.role
+            log_audit('USER_LOGIN', f'User {staff.username} logged in successfully as {staff.role}', target=staff.username)
+            flash(f'Logged in successfully as {staff.role}', 'success')
+            
+            # Smart role-based redirection mapping your exact official staff roles
+            role_str = staff.role.lower()
+            if 'admin' in role_str:
+                return redirect(url_for('admin_dashboard'))
+            elif 'head of institution' in role_str or 'head' in role_str or 'hoi' in role_str or 'principal' in role_str:
+                return redirect(url_for('hoi_dashboard'))
+            elif 'examination office' in role_str or 'exam' in role_str:
+                return redirect(url_for('exam_office'))
+            elif 'ream collection desk' in role_str or 'ream' in role_str or 'collection' in role_str:
+                return redirect(url_for('ream_dashboard'))
+            else:
+                return redirect(url_for('ream_dashboard'))
+        else:
+            flash('Invalid username or password.', 'danger')
+            
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    if 'user_id' in session:
+        username = session.get('username', 'User')
+        log_audit('USER_LOGOUT', f'User {username} logged out.', target=username)
+    session.clear()
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
+
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
@@ -427,68 +476,21 @@ def delete_staff(staff_id):
     return redirect(url_for('manage_staff'))
 
 
-# ==========================================
-# STAFF LOGIN & PORTAL ROUTES
-# ==========================================
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        if username:
-            username = username.strip()
-        if password:
-            password = password.strip()
-            
-        staff = StaffUser.query.filter_by(username=username, password=password).first()
-        if staff:
-            session.clear()  # Clear any lingering old session data immediately
-            session['user_id'] = staff.id
-            session['username'] = staff.username
-            session['role'] = staff.role
-            log_audit('USER_LOGIN', f'User {staff.username} logged in successfully as {staff.role}', target=staff.username)
-            flash(f'Logged in successfully as {staff.role}', 'success')
-            
-            # Smart role-based redirection to their specific page
-            role_str = staff.role.lower()
-            if 'admin' in role_str:
-                return redirect(url_for('admin_dashboard'))
-            elif 'head' in role_str or 'hoi' in role_str:
-                return redirect(url_for('hoi_dashboard'))
-            elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
-                return redirect(url_for('ream_dashboard'))
-            elif 'exam' in role_str:
-                return redirect(url_for('exam_office'))
-            else:
-                return redirect(url_for('ream_dashboard'))
-        else:
-            flash('Invalid username or password.', 'danger')
-            
-    return render_template('login.html')
-
-
-@app.route('/logout')
-def logout():
-    if 'user_id' in session:
-        username = session.get('username', 'User')
-        log_audit('USER_LOGOUT', f'User {username} logged out.', target=username)
-    session.clear()
-    flash('You have been logged out successfully.', 'info')
-    return redirect(url_for('login'))
-
-
 @app.route('/portal/hoi', methods=['GET', 'POST'])
 def hoi_dashboard():
     if 'user_id' not in session:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Fetch global system settings for default active period
+    # Safely fetch or auto-create global system settings
     setting = SystemSetting.query.first()
-    default_year = setting.active_year if setting else '2026'
-    default_term = setting.active_term if setting else 'Term 1'
+    if not setting:
+        setting = SystemSetting(active_year='2026', active_term='Term 1')
+        db.session.add(setting)
+        db.session.commit()
+
+    default_year = setting.active_year
+    default_term = setting.active_term
 
     # Filter parameters from GET request
     selected_year = request.args.get('year', default_year)
@@ -510,7 +512,7 @@ def hoi_dashboard():
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
 
-    # 2. School-wide Collection Rate Calculation for Active Term/Year (Case-insensitive & string-safe match)
+    # 2. School-wide Collection Rate Calculation for Active Term/Year
     term_records = ReamRecord.query.filter(
         db.func.lower(ReamRecord.term) == selected_term.lower(),
         ReamRecord.year == str(selected_year)
@@ -520,7 +522,7 @@ def hoi_dashboard():
     total_submitted_count = len(submitted_student_ids)
     school_collection_percentage = round((total_submitted_count / total_students * 100), 1) if total_students > 0 else 0.0
 
-    # 3. Form / Grade Smart Analysis Data
+    # 3. Form / Grade Analysis Data
     all_forms = db.session.query(Student.form.distinct()).filter_by(year=selected_year).all()
     form_list = [f[0] for f in all_forms if f[0]]
     form_analysis = []
@@ -566,7 +568,6 @@ def hoi_dashboard():
     
     filtered_students_raw = student_query.order_by(Student.form, Student.stream, Student.adm_no).all()
     
-    # Process status filter (Submitted vs Pending vs All)
     filtered_report_data = []
     for s in filtered_students_raw:
         is_submitted = s.id in submitted_student_ids
@@ -586,13 +587,12 @@ def hoi_dashboard():
             'status': status_str
         })
 
-    # Available years for filter dropdown
     year_results = db.session.query(Student.year.distinct()).all()
     available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
 
     return render_template(
         'hoi_dashboard.html',
-        role="Head of Institution (HOI)",
+        role="Head of Institution",
         username=session.get('username'),
         selected_year=selected_year,
         selected_term=selected_term,
@@ -619,7 +619,6 @@ def ream_dashboard():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Fetch active term and year globally configured by Admin
     setting = SystemSetting.query.first()
     selected_year = setting.active_year if setting else '2026'
     selected_term = setting.active_term if setting else 'Term 1'
@@ -662,15 +661,12 @@ def ream_dashboard():
                         
         return redirect(url_for('ream_dashboard', page=page))
 
-    # Pagination: exactly 15 students per page matching the active year
     pagination = Student.query.filter_by(year=selected_year).order_by(Student.adm_no).paginate(page=page, per_page=15, error_out=False)
     students = pagination.items
 
-    # Fetch ream records for these 15 students
     student_ids = [s.id for s in students]
     records = ReamRecord.query.filter(ReamRecord.student_id.in_(student_ids), ReamRecord.year==selected_year).all()
     
-    # Map statuses for all 3 terms per student
     ream_statuses = {s.id: {'Term 1': False, 'Term 2': False, 'Term 3': False} for s in students}
     for r in records:
         if r.student_id in ream_statuses and r.term in ream_statuses[r.student_id]:
@@ -697,31 +693,17 @@ def exam_dashboard():
     return redirect(url_for('exam_office'))
 
 
-@app.route('/portal')
-def staff_portal():
-    if 'user_id' not in session:
-        flash('Please log in first.', 'warning')
-        return redirect(url_for('login'))
-    return render_template('under_construction.html', role=session.get('role'), username=session.get('username'))
-
-
 @app.route('/examination-office', methods=['GET', 'POST'])
 def exam_office():
     if 'user_id' not in session:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # 1. Calculate total reams collected in store
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
-
-    # Calculate total sheets already requested/taken from store
     total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
-    
-    # Ensure available store sheets never drop below 0
     available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
 
-    # Calculate current undisbursed loose leftover sheets across requests
     total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
     active_loose_sheets = total_loose_generated - total_loose_disbursed
@@ -729,12 +711,10 @@ def exam_office():
     if request.method == 'POST':
         action = request.form.get('action')
 
-        # Guardrail 1: Check if any ream is collected yet
         if total_reams_collected <= 0:
             flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
             return redirect(url_for('exam_office'))
 
-        # Guardrail 2: Check if active loose sheets exceed 20
         if action == 'request_reams' and active_loose_sheets > 20:
             flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
             return redirect(url_for('exam_office'))
@@ -748,17 +728,13 @@ def exam_office():
             sheets_per_student = int(request.form.get('sheets_per_student'))
 
             raw_needed = num_students * sheets_per_student
-
-            # Apply custom padding rule
             padding = 60 if raw_needed <= 250 else 50
             total_needed_with_padding = raw_needed + padding
 
-            # Guardrail 3: Check if requesting more than available store sheets
             if total_needed_with_padding > available_store_sheets:
                 flash("REQUESTING MORE THAN IS AVAILABLE IN THE STORE.", "error")
                 return redirect(url_for('exam_office'))
 
-            # Calculate reams and loose leftover sheets
             reams_to_take = total_needed_with_padding // 500
             loose_leftover = total_needed_with_padding % 500
 
@@ -780,7 +756,6 @@ def exam_office():
             flash("Exam ream request successfully submitted.", "success")
             return redirect(url_for('exam_office'))
 
-    # Fetch history of exam requests
     exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
     
     return render_template(
