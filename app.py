@@ -587,11 +587,10 @@ def hoi_dashboard():
             'gender': s.gender,
             'status': status_str
         })
-
-     year_results = db.session.query(Student.year.distinct()).all()
-     available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
-     logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
-     disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
+    year_results = db.session.query(Student.year.distinct()).all()
+    available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
     
     return render_template(
         'hoi_dashboard.html',
@@ -612,7 +611,7 @@ def hoi_dashboard():
         form_analysis=form_analysis,
         stream_analysis=stream_analysis,
         filtered_report_data=filtered_report_data,
-        form_list=form_list,            # <--- Added comma here
+        form_list=form_list,
         logs=logs,                      
         disbursements=disbursements
     )
