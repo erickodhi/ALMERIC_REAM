@@ -119,17 +119,18 @@
                         </thead>
                         <tbody>
                             {% for log in logs %}
-                            <tr>
-                                <td class="small text-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
-                                <td><span class="badge bg-secondary">{{ log.username }}</span></td>
+                            {% set is_red = 'UNDO' in log.action_type or 'delete' in log.action_type.lower() %}
+                            <tr class="{% if is_red %}table-danger text-danger fw-semibold{% endif %}">
+                                <td class="small {% if not is_red %}text-muted{% endif %}">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
+                                <td><span class="badge {% if is_red %}bg-danger{% else %}bg-secondary{% endif %}">{{ log.username }}</span></td>
                                 <td>
-                                    <span class="badge {% if log.action_type == 'DELETE' %}bg-danger{% elif log.action_type == 'UPDATE' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                    <span class="badge {% if is_red or log.action_type == 'DELETE' %}bg-danger text-white{% elif log.action_type == 'UPDATE' %}bg-warning text-dark{% else %}bg-success{% endif %}">
                                         {{ log.action_type }}
                                     </span>
                                 </td>
                                 <td class="fw-bold">{{ log.target }}</td>
                                 <td class="small">{{ log.details }}</td>
-                                <td class="small text-muted font-monospace">{{ log.ip_address or '127.0.0.1' }}</td>
+                                <td class="small {% if not is_red %}text-muted{% endif %} font-monospace">{{ log.ip_address or '127.0.0.1' }}</td>
                             </tr>
                             {% else %}
                             <tr>
