@@ -719,7 +719,19 @@ def exam_office():
             flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
             return redirect(url_for('exam_office'))
 
+        if request.method == 'POST':
+        action = request.form.get('action')
+
+        if total_reams_collected <= 0:
+            flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
+            return redirect(url_for('exam_office'))
+
+        # === HANDLER 1: REQUEST REAMS ===
         if action == 'request_reams':
+            if active_loose_sheets > 20:
+                flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
+                return redirect(url_for('exam_office'))
+
             subject = request.form.get('subject')
             purpose = request.form.get('purpose')
             target_form = request.form.get('target_form')
@@ -754,6 +766,35 @@ def exam_office():
             db.session.commit()
             log_audit('EXAM_REQUEST', f'Requested {total_needed_with_padding} sheets for exam: {subject} ({target_form} {stream})', target=subject)
             flash("Exam ream request successfully submitted.", "success")
+            return redirect(url_for('exam_office'))
+
+        # === HANDLER 2: DISBURSE LOOSE SHEETS ===
+        if action == 'disburse_sheets':
+            subject = request.form.get('subject')
+            purpose = request.form.get('purpose')
+            target_form = request.form.get('target_form')
+            stream = request.form.get('stream')
+            num_students = int(request.form.get('num_students'))
+            sheets_per_student = int(request.form.get('sheets_per_student'))
+            disbursed_count = num_students * sheets_per_student
+
+            if disbursed_count > active_loose_sheets:
+                flash("ERROR: CANNOT DISBURSE MORE THAN AVAILABLE ACTIVE LOOSE SHEETS.", "error")
+                return redirect(url_for('exam_office'))
+
+            new_disbursement = SheetDisbursement(
+                subject=subject,
+                purpose=purpose,
+                target_form=target_form,
+                stream=stream,
+                num_students=num_students,
+                sheets_per_student=sheets_per_student,
+                disbursed_sheets=disbursed_count
+            )
+            db.session.add(new_disbursement)
+            db.session.commit()
+            log_audit('LOOSE_DISBURSEMENT', f'Disbursed {disbursed_count} loose sheets for: {subject} ({target_form} {stream})', target=subject)
+            flash("Loose sheets successfully disbursed.", "success")
             return redirect(url_for('exam_office'))
 
     exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
