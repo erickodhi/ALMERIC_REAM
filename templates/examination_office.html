@@ -253,7 +253,7 @@
             const raw = students * rate;
             const padding = raw <= 250 ? 60 : 50;
             const totalNeeded = raw + padding;
-            const reams = Math.floor(totalNeeded / 500) || 1;
+            const reams = Math.ceil(totalNeeded / 500) || 1;
 
             document.getElementById('verifySummary').innerHTML = `
                 <p><b>Subject:</b> ${document.querySelector('[name="subject"]').value}</p>
