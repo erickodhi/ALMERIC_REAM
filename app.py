@@ -763,6 +763,7 @@ def exam_office():
         role="Examination Office",
         username=session.get('username'),
         total_store_sheets=available_store_sheets,
+        available_store_sheets=available_store_sheets,
         active_loose_sheets=active_loose_sheets,
         exam_requests=exam_requests
     )
