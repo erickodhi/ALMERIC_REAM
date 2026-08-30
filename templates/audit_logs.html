@@ -104,7 +104,7 @@
 
             <!-- Audit Logs Table -->
             <div class="content-box">
-                <h5 class="text-secondary mb-3"><i class="fas fa-database me-2"></i> Recorded Transactions & Actions ({{ logs|length }} total)</h5>
+                <h5 class="text-secondary mb-3"><i class="fas fa-database me-2"></i> Recorded Transactions & Actions</h5>
                 <div class="table-responsive">
                     <table class="table table-hover table-striped align-middle">
                         <thead class="table-dark">
@@ -140,6 +140,31 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Controls -->
+                {% if pagination and pagination.pages > 1 %}
+                <nav aria-label="Audit Log Navigation" class="mt-4">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('audit_logs', page=pagination.prev_num, action=selected_action, user=selected_user) if pagination.has_prev else '#' }}">
+                                <i class="fas fa-chevron-left me-1"></i> Previous
+                            </a>
+                        </li>
+                        
+                        <li class="page-item disabled">
+                            <span class="page-link bg-light text-dark fw-bold">
+                                Page {{ pagination.page }} of {{ pagination.pages }}
+                            </span>
+                        </li>
+
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('audit_logs', page=pagination.next_num, action=selected_action, user=selected_user) if pagination.has_next else '#' }}">
+                                Next <i class="fas fa-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
             </div>
         </main>
     </div>

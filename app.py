@@ -777,7 +777,6 @@ def audit_logs():
         return redirect(url_for('login'))
 
     try:
-        # Force table creation in case it's missing on Render's persistent disk
         db.create_all()
 
         if AuditLog.query.count() == 0:
@@ -791,9 +790,10 @@ def audit_logs():
             db.session.add(initial_log)
             db.session.commit()
 
-        # Get filter parameters from request args
+        # Get filter parameters and page number
         selected_action = request.args.get('action', 'All')
         selected_user = request.args.get('user', 'All')
+        page = request.args.get('page', 1, type=int)
 
         # Fetch unique actions and usernames for dropdowns
         actions_query = db.session.query(AuditLog.action_type.distinct()).all()
@@ -809,7 +809,10 @@ def audit_logs():
         if selected_user and selected_user != 'All':
             query = query.filter_by(username=selected_user)
 
-        logs = query.order_by(AuditLog.timestamp.desc()).all()
+        # Paginate with 10 logs per page
+        pagination = query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=10, error_out=False)
+        logs = pagination.items
+
     except Exception as e:
         flash(f'Error loading audit logs: {str(e)}', 'danger')
         logs = []
@@ -817,10 +820,12 @@ def audit_logs():
         usernames = []
         selected_action = 'All'
         selected_user = 'All'
+        pagination = None
 
     return render_template(
         'audit_logs.html', 
         logs=logs, 
+        pagination=pagination,
         actions=actions, 
         usernames=usernames, 
         selected_action=selected_action, 
