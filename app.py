@@ -453,7 +453,9 @@ def login():
             
             # Smart role-based redirection to their specific page
             role_str = staff.role.lower()
-            if 'head' in role_str or 'hoi' in role_str:
+            if 'admin' in role_str:
+                return redirect(url_for('admin_dashboard'))
+            elif 'head' in role_str or 'hoi' in role_str:
                 return redirect(url_for('hoi_dashboard'))
             elif 'ream' in role_str or 'collection' in role_str or 'collector' in role_str:
                 return redirect(url_for('ream_dashboard'))
@@ -770,56 +772,25 @@ def exam_office():
                 total_sheets_needed=total_needed_with_padding,
                 padding_sheets=padding,
                 loose_leftover_sheets=loose_leftover,
-                reams_allocated=reams_to_take if reams_to_take > 0 else 1
+                ream_allocated=reams_to_take if reams_to_take > 0 else 1
             )
             db.session.add(new_req)
             db.session.commit()
             log_audit('EXAM_REQUEST', f'Requested {total_needed_with_padding} sheets for exam: {subject} ({target_form} {stream})', target=subject)
-            flash("Exam ream request verified and recorded successfully!", "success")
+            flash("Exam ream request successfully submitted.", "success")
             return redirect(url_for('exam_office'))
 
-        elif action == 'disburse_sheets':
-            subject = request.form.get('subject')
-            purpose = request.form.get('purpose')
-            target_form = request.form.get('target_form')
-            stream = request.form.get('stream')
-            num_students = int(request.form.get('num_students'))
-            sheets_per_student = int(request.form.get('sheets_per_student'))
-            disbursed_total = num_students * sheets_per_student
-
-            # Guardrail: Prevent disbursing more loose sheets than are currently active/available
-            if disbursed_total > active_loose_sheets:
-                flash(f"DISBURSEMENT DENIED: Cannot disburse {disbursed_total} sheets. You only have {active_loose_sheets} active loose leftover sheets available.", "error")
-                return redirect(url_for('exam_office'))
-
-            new_disb = SheetDisbursement(
-                subject=subject,
-                purpose=purpose,
-                target_form=target_form,
-                stream=stream,
-                num_students=num_students,
-                sheets_per_student=sheets_per_student,
-                disbursed_sheets=disbursed_total
-            )
-            db.session.add(new_disb)
-            db.session.commit()
-            log_audit('SHEET_DISBURSEMENT', f'Disbursed {disbursed_total} loose sheets for {subject} ({target_form} {stream})', target=subject)
-            flash("Loose leftover sheets disbursed successfully!", "success")
-            return redirect(url_for('exam_office'))
-
-    exam_requests = ExamRequest.query.order_by(ExamRequest.created_at.desc()).all()
-    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
-
+    # Fetch history of exam requests
+    exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
+    
     return render_template(
         'exam_office.html',
-        total_reams_collected=total_reams_collected,
-        total_store_sheets=total_store_sheets,
-        available_store_sheets=available_store_sheets,
+        role="Examination Office",
+        username=session.get('username'),
+        total_store_sheets=available_store_sheets,
         active_loose_sheets=active_loose_sheets,
-        exam_requests=exam_requests,
-        disbursements=disbursements
+        exam_requests=exam_requests
     )
-
 
 if __name__ == '__main__':
     app.run(debug=True)
