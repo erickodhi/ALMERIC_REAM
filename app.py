@@ -748,7 +748,7 @@ def exam_office():
                 total_sheets_needed=total_needed_with_padding,
                 padding_sheets=padding,
                 loose_leftover_sheets=loose_leftover,
-                ream_allocated=reams_to_take
+                reams_allocated=reams_to_take
             )
             db.session.add(new_req)
             db.session.commit()
