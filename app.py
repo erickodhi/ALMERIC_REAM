@@ -788,6 +788,8 @@ def exam_office():
 
     exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
     
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.id.desc()).all()
+
     return render_template(
         'examination_office.html',
         role="Examination Office",
@@ -795,7 +797,8 @@ def exam_office():
         total_store_sheets=available_store_sheets,
         available_store_sheets=available_store_sheets,
         active_loose_sheets=active_loose_sheets,
-        exam_requests=exam_requests
+        exam_requests=exam_requests,
+        disbursements=disbursements
     )
 
 @app.route('/admin/audit-logs')
