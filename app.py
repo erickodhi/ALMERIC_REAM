@@ -65,8 +65,25 @@ def log_audit(action_type, details, target="System"):
         print(f"Audit log error: {e}")
 
 
+@app.route('/')
+def index():
+    if 'user_id' in session:
+        role_str = str(session.get('role', '')).lower()
+        if 'head' in role_str or 'hoi' in role_str:
+            return redirect(url_for('hoi_dashboard'))
+        elif 'exam' in role_str:
+            return redirect(url_for('exam_office'))
+        else:
+            return redirect(url_for('ream_dashboard'))
+    return redirect(url_for('login'))
+
+
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     # Ensure system setting exists
     system_setting = SystemSetting.query.first()
     if not system_setting:
@@ -169,6 +186,10 @@ def admin_dashboard():
 
 @app.route('/admin/promote', methods=['POST'])
 def promote_students():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     source_year = request.form.get('source_year')
     target_year = request.form.get('target_year')
 
@@ -222,6 +243,10 @@ def promote_students():
 
 @app.route('/admin/upload_csv', methods=['POST'])
 def upload_csv():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     if 'csv_file' not in request.files:
         flash('No file uploaded.', 'danger')
         return redirect(url_for('admin_dashboard'))
@@ -279,6 +304,10 @@ def upload_csv():
 
 @app.route('/admin/delete_student/<int:student_id>', methods=['POST'])
 def delete_student(student_id):
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     student = Student.query.get_or_404(student_id)
     student_name = student.full_name
     db.session.delete(student)
@@ -290,13 +319,15 @@ def delete_student(student_id):
 
 @app.route('/admin/download_template')
 def download_template():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     csv_content = (
-        'Admission Number,Full Name,Form/Grade,Stream,Gender,Term of'
-        ' Enrollment,Year\n'
+        'Admission Number,Full Name,Form/Grade,Stream,Gender,Term of Enrollment,Year\n'
     )
     csv_content += (
-        'ADM001,John Doe,Form 1,East,Male,Term 1,2026\nADM002,Jane Smith,Form'
-        ' 1,West,Female,Term 2,2026\n'
+        'ADM001,John Doe,Form 1,East,Male,Term 1,2026\nADM002,Jane Smith,Form 1,West,Female,Term 2,2026\n'
     )
     return Response(
         csv_content,
@@ -309,6 +340,10 @@ def download_template():
 
 @app.route('/admin/staff', methods=['GET', 'POST'])
 def manage_staff():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -368,6 +403,10 @@ def manage_staff():
 
 @app.route('/admin/staff/delete/<int:staff_id>', methods=['POST'])
 def delete_staff(staff_id):
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
     staff = StaffUser.query.get_or_404(staff_id)
     staff_username = staff.username
     db.session.delete(staff)
@@ -761,75 +800,13 @@ def exam_office():
     disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
 
     return render_template(
-        'examination_office.html',
-        exam_requests=exam_requests,
-        disbursements=disbursements,
+        'exam_office.html',
         total_reams_collected=total_reams_collected,
+        total_store_sheets=total_store_sheets,
         available_store_sheets=available_store_sheets,
-        active_loose_sheets=active_loose_sheets
-    )
-
-
-@app.route('/audit-logs')
-def audit_logs():
-    if 'user_id' not in session:
-        flash('Please log in first.', 'warning')
-        return redirect(url_for('login'))
-
-    try:
-        db.create_all()
-
-        if AuditLog.query.count() == 0:
-            initial_log = AuditLog(
-                action_type='SYSTEM_INIT',
-                username='System',
-                target='System',
-                details='System initialized and audit logs activated.',
-                ip_address='127.0.0.1'
-            )
-            db.session.add(initial_log)
-            db.session.commit()
-
-        # Get filter parameters and page number
-        selected_action = request.args.get('action', 'All')
-        selected_user = request.args.get('user', 'All')
-        page = request.args.get('page', 1, type=int)
-
-        # Fetch unique actions and usernames for dropdowns
-        actions_query = db.session.query(AuditLog.action_type.distinct()).all()
-        actions = sorted([a[0] for a in actions_query if a[0]])
-
-        usernames_query = db.session.query(AuditLog.username.distinct()).all()
-        usernames = sorted([u[0] for u in usernames_query if u[0]])
-
-        # Build query with filters
-        query = AuditLog.query
-        if selected_action and selected_action != 'All':
-            query = query.filter_by(action_type=selected_action)
-        if selected_user and selected_user != 'All':
-            query = query.filter_by(username=selected_user)
-
-        # Paginate with 10 logs per page
-        pagination = query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=10, error_out=False)
-        logs = pagination.items
-
-    except Exception as e:
-        flash(f'Error loading audit logs: {str(e)}', 'danger')
-        logs = []
-        actions = []
-        usernames = []
-        selected_action = 'All'
-        selected_user = 'All'
-        pagination = None
-
-    return render_template(
-        'audit_logs.html', 
-        logs=logs, 
-        pagination=pagination,
-        actions=actions, 
-        usernames=usernames, 
-        selected_action=selected_action, 
-        selected_user=selected_user
+        active_loose_sheets=active_loose_sheets,
+        exam_requests=exam_requests,
+        disbursements=disbursements
     )
 
 
