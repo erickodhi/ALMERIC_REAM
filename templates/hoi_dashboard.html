@@ -42,12 +42,11 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{{ url_for('hoi_dashboard') }}"><i class="fas fa-chart-line me-2"></i> Executive Overview</a>
                 </li>
-                <li class="nav-item mt-4">
-                    <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
-                </li>
-                  <!-- Add this navigation item inside your sidebar <ul> -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('audit_logs') }}"><i class="fas fa-history me-2"></i> Audit & Logs</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
                 </li>
             </ul>
         </nav>
@@ -305,6 +304,76 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- System Audit Trail Section -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-history me-2"></i> System Audit Trail & Logs</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle text-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>Details</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td class="text-xs text-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else '' }}</td>
+                                <td class="fw-bold text-dark">{{ log.username }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ log.action_type }}</span>
+                                </td>
+                                <td>{{ log.target }}</td>
+                                <td class="text-muted">{{ log.details }}</td>
+                                <td class="text-xs text-muted">{{ log.ip_address }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No system audit logs recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sheet Disbursements Section -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-exchange-alt me-2"></i> Recent Sheet Disbursements</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle text-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Sheets Disbursed</th>
+                                <th>Recipient / Teacher</th>
+                                <th>Purpose</th>
+                                <th>Recorded By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in disbursements %}
+                            <tr>
+                                <td class="text-xs text-muted">{{ d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else '' }}</td>
+                                <td class="fw-bold text-success">{{ d.sheets_count }} sheets</td>
+                                <td>{{ d.recipient }}</td>
+                                <td>{{ d.purpose }}</td>
+                                <td>{{ d.recorded_by }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">No sheet disbursements recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
