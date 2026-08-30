@@ -506,8 +506,11 @@ def hoi_dashboard():
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
 
+    #total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
+    #available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
     total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
-    available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
+    remaining_sheets = max(0, total_store_sheets - total_sheets_requested)
+    available_store_reams = remaining_sheets // 500
 
     total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
     total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
@@ -604,7 +607,8 @@ def hoi_dashboard():
         available_years=available_years,
         total_students=total_students,
         total_reams_collected=total_reams_collected,
-        available_store_sheets=available_store_sheets,
+        #available_store_sheets=available_store_sheets,
+        available_store_reams=available_store_reams,
         active_loose_sheets=active_loose_sheets,
         total_submitted_count=total_submitted_count,
         school_collection_percentage=school_collection_percentage,
