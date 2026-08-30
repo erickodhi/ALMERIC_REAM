@@ -759,7 +759,7 @@ def exam_office():
     exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
     
     return render_template(
-        'exam_office.html',
+        'examination_office.html',
         role="Examination Office",
         username=session.get('username'),
         total_store_sheets=available_store_sheets,
