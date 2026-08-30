@@ -352,20 +352,20 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>Date</th>
+                                <th>Subject</th>
+                                <th>Form / Stream</th>
                                 <th>Sheets Disbursed</th>
-                                <th>Recipient / Teacher</th>
                                 <th>Purpose</th>
-                                <th>Recorded By</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for d in disbursements %}
                             <tr>
                                 <td class="text-xs text-muted">{{ d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else '' }}</td>
-                                <td class="fw-bold text-success">{{ d.sheets_count }} sheets</td>
-                                <td>{{ d.recipient }}</td>
+                                <td class="fw-bold text-dark">{{ d.subject }}</td>
+                                <td>{{ d.target_form }} - {{ d.stream }}</td>
+                                <td class="fw-bold text-success">{{ d.disbursed_sheets }} sheets</td>
                                 <td>{{ d.purpose }}</td>
-                                <td>{{ d.recorded_by }}</td>
                             </tr>
                             {% else %}
                             <tr>
