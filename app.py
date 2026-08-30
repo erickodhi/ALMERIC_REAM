@@ -767,5 +767,14 @@ def exam_office():
         exam_requests=exam_requests
     )
 
+@app.route('/admin/audit-logs')
+def audit_logs():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(200).all()
+    return render_template('audit_logs.html', audit_logs=logs)
+
 if __name__ == '__main__':
     app.run(debug=True)
