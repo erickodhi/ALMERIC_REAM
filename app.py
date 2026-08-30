@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+from datetime import timedelta
 from flask import (
     Flask,
     Response,
@@ -21,6 +22,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'almeric_ream_secret_key'
 )
+
+# Automatically expire sessions after 15 minutes of inactivity to prevent attribution mix-ups on shared computers
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    session.modified = True
 
 db.init_app(app)
 
@@ -385,6 +394,7 @@ def login():
             
         staff = StaffUser.query.filter_by(username=username, password=password).first()
         if staff:
+            session.clear()  # Clear any lingering old session data immediately
             session['user_id'] = staff.id
             session['username'] = staff.username
             session['role'] = staff.role
@@ -405,6 +415,16 @@ def login():
             flash('Invalid username or password.', 'danger')
             
     return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    if 'user_id' in session:
+        username = session.get('username', 'User')
+        log_audit('USER_LOGOUT', f'User {username} logged out.', target=username)
+    session.clear()
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
 
 
 @app.route('/portal/hoi', methods=['GET', 'POST'])
@@ -763,60 +783,20 @@ def audit_logs():
         if AuditLog.query.count() == 0:
             initial_log = AuditLog(
                 action_type='SYSTEM_INIT',
-                username=session.get('username', 'Admin'),
+                username='System',
                 target='System',
-                details='Audit log table initialized and active.'
+                details='System initialized and audit logs activated.',
+                ip_address='127.0.0.1'
             )
             db.session.add(initial_log)
             db.session.commit()
 
-        selected_action = request.args.get('action', 'All')
-        selected_user = request.args.get('user', 'All')
-        
-        query = AuditLog.query
-        
-        if selected_action and selected_action != 'All':
-            query = query.filter_by(action_type=selected_action)
-        if selected_user and selected_user != 'All':
-            query = query.filter_by(username=selected_user)
-            
-        logs = query.order_by(AuditLog.timestamp.desc()).all()
-        
-        actions = [row[0] for row in db.session.query(AuditLog.action_type).distinct().all() if row[0]]
-        usernames = [row[0] for row in db.session.query(AuditLog.username).distinct().all() if row[0]]
-
-        return render_template('audit_logs.html',
-                               username=session.get('username', 'Admin'),
-                               logs=logs,
-                               actions=actions,
-                               usernames=usernames,
-                               selected_action=selected_action,
-                               selected_user=selected_user)
-
+        logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
     except Exception as e:
-        db.session.rollback()
-        return f"""
-        <div style="font-family: monospace; padding: 40px; background: #fee2e2; color: #991b1b; border: 2px solid #f87171; border-radius: 8px; margin: 20px;">
-            <h2 style="margin-top: 0;">Root Cause Exception Caught:</h2>
-            <p><strong>Error Type:</strong> {type(e).__name__}</p>
-            <p><strong>Error Details:</strong> {str(e)}</p>
-            <hr style="border-color: #fca5a5; margin: 20px 0;">
-            <p>Check your terminal or Render logs for traceback details. This happens if the database schema is out of sync or `models.py` doesn't define `AuditLog` properly.</p>
-        </div>
-        """, 500
+        flash(f'Error loading audit logs: {str(e)}', 'danger')
+        logs = []
 
-
-@app.route('/logout')
-def logout():
-    log_audit('USER_LOGOUT', f'User {session.get("username")} logged out.', target=session.get('username', 'System'))
-    session.clear()
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('login'))
-
-
-@app.route('/')
-def index():
-    return redirect(url_for('admin_dashboard'))
+    return render_template('audit_logs.html', logs=logs)
 
 
 if __name__ == '__main__':
