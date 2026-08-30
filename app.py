@@ -811,4 +811,18 @@ def exam_office():
 
 
 if __name__ == '__main__':
+    with app.app_context():
+    db.create_all()
+    
+    # Auto-seed initial admin account if no staff users exist
+    if not StaffUser.query.first():
+        admin_user = StaffUser(
+            username='admin',
+            full_name='System Administrator',
+            password='adminpassword123',
+            role='Admin'
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Default admin account created: username 'admin' with password 'adminpassword123'")
     app.run(debug=True)
