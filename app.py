@@ -29,24 +29,25 @@ with app.app_context():
 
 
 def log_audit(action_type, details, target="System"):
-    """Helper function to cleanly write to the audit log table with error safety and guaranteed username capture."""
+    """Helper function to anchor audit logs directly to the verified database user record."""
     try:
-        # Resolve username aggressively from session or database fallback
-        current_user = session.get('username')
+        current_user = "System Operator"
+        user_id = session.get('user_id')
         
-        if not current_user and session.get('user_id'):
-            staff_obj = StaffUser.query.get(session.get('user_id'))
-            if staff_obj:
-                current_user = staff_obj.username
-                
-        if not current_user:
-            current_user = 'System Operator'
+        # Pull the exact, unalterable username straight from the database record using user_id
+        if user_id:
+            staff_member = StaffUser.query.get(user_id)
+            if staff_member and staff_member.username:
+                current_user = staff_member.username.strip()
+        elif session.get('username'):
+            current_user = str(session.get('username')).strip()
 
         audit = AuditLog(
             action_type=action_type,
-            username=str(current_user),
+            username=current_user,
             target=target,
-            details=details
+            details=details,
+            ip_address=request.remote_addr or '127.0.0.1'
         )
         db.session.add(audit)
         db.session.commit()
