@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - ALMERIC REAM</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden">
 
@@ -43,6 +44,10 @@
             <button onclick="openModal('activePeriodModal')" class="w-full text-left flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition text-amber-400 cursor-pointer">
                 <span class="mr-3">⚙️</span> Set Active Period
             </button>
+
+            <a href="{{ url_for('logout') }}" class="flex items-center px-4 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition text-rose-400">
+                <i class="fas fa-sign-out-alt mr-3"></i> Logout
+            </a>
         </nav>
 
         <div class="px-6 py-4 border-t border-slate-800 text-xs text-slate-500">
@@ -57,7 +62,10 @@
                 <h2 class="text-sm font-bold tracking-wider">ALMERIC REAM</h2>
                 <p class="text-[10px] text-slate-400">Management System</p>
             </div>
-            <a href="{{ url_for('manage_staff') }}" class="bg-indigo-600 px-3 py-1 rounded text-xs font-medium text-white">Staff</a>
+            <div class="flex items-center space-x-2">
+                <a href="{{ url_for('manage_staff') }}" class="bg-indigo-600 px-3 py-1 rounded text-xs font-medium text-white">Staff</a>
+                <a href="{{ url_for('logout') }}" class="bg-rose-600 px-3 py-1 rounded text-xs font-medium text-white"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
         </div>
         <!-- Mobile Action Buttons Grid -->
         <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800 text-xs">
