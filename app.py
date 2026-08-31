@@ -1414,8 +1414,8 @@ def audit_logs():
 
 def send_hoi_sms(message_body):
     username = os.environ.get('AT_USERNAME', 'sandbox')
-    api_key = os.environ.get('AT_API_KEY', 'your_api_key')
-    hoi_phone = os.environ.get('HOI_PHONE_NUMBER')
+    api_key = os.environ.get('AT_API_KEY', 'atsk_241839503f3ef8b1d5455994ef868aa0abb57967ff38bf707ccee4c6197af437af700cff')
+    hoi_phone = os.environ.get('+254795448431')
 
     if not hoi_phone or not api_key:
         print("SMS configuration missing: HOI phone or API key not set.")
