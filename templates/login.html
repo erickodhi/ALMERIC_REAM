@@ -1,3 +1,4 @@
+<!--
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +34,60 @@
             <div>
                 <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Password</label>
                 <input type="password" name="password" required class="w-full px-4 py-2.5 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                Login to Portal
+            </button>
+        </form>
+
+        <div class="mt-6 text-center border-t border-gray-100 pt-4 text-xs text-gray-400">
+            Almeric Design Solutions Enterprise &copy; 2026
+        </div>
+    </div>
+
+</body>
+</html>
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ALMERIC REAM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="font-sans text-gray-900 flex items-center justify-center h-screen bg-cover bg-center relative" style="background-image: url('{{ url_for('static', filename='images/ream_cover.jpg') }}');">
+
+    <!-- Dark gradient overlay to make the login box pop -->
+    <div class="absolute inset-0 bg-black/50"></div>
+
+    <!-- Login Card (z-10 ensures it sits on top of the background overlay) -->
+    <div class="relative z-10 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full p-8 mx-4">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 tracking-wide">ALMERIC REAM</h2>
+            <p class="text-xs text-slate-500 mt-1">Staff Portal Login</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-3 rounded-lg text-white text-sm font-medium shadow-sm {% if category == 'success' %}bg-emerald-600{% else %}bg-rose-600{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Username</label>
+                <input type="text" name="username" required class="w-full px-4 py-2.5 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            </div>
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Password</label>
+                <input type="password" name="password" required class="w-full px-4 py-2.5 border rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
             </div>
 
             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
