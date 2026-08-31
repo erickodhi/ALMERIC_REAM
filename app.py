@@ -1306,11 +1306,15 @@ def exam_office():
             # --- SMS NOTIFICATION TRIGGER FOR HOI ---
             current_remaining_reams = (available_store_sheets - total_needed_with_padding) // 500
             sms_text = (
-                f"EXAM REQUEST ALERT:\n"
-                f"Subject: {subject}\n"
-                f"Purpose: {purpose} ({target_form} {stream})\n"
-                f"Reams Taken: {reams_to_take} ({total_needed_with_padding} sheets)\n"
-                f"Store Left: {max(0, current_remaining_reams)} reams"
+               "📊 *REAMPULSE AUDIT UPDATE* 📊\n"
+               "-----------------------------------\n"
+               f"🟢 *New Print Run:* {subject} ({target_form} {stream})\n"
+               "───────────────────────────────────\n"
+               f"📦 *Store Left:* {current_remaining_reams} Reams\n"
+               "───────────────────────────────────\n"
+               f"📋 *Reams Taken:* {reams_to_take} Reams ({total_needed_with_padding} sheets)\n"
+               "-----------------------------------\n"
+               "*(System Generated Notification)*"
             )
             send_hoi_sms(sms_text)
             # ----------------------------------------
