@@ -18,9 +18,13 @@ from models import Form, Student, Stream, StaffUser, ReamRecord, SystemSetting, 
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', 'sqlite:///ream_system.db'
-)
+if os.path.exists('/var/data'):
+    db_path = '/var/data/ream_system.db'
+else:
+    db_path = 'ream_system.db'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path}'
+
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'almeric_ream_secret_key'
 )
