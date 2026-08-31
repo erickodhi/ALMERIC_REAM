@@ -1416,8 +1416,8 @@ import africastalking
 
 def send_hoi_sms(message_body):
     # Hardcoded directly to bypass Render environment variable lag
-    username = 'sandbox'
-    api_key = 'atsk_241839503f3ef8b1d5455994ef868aa0abb57967ff38bf707ccee4c6197af437af700cff'
+    username = 'almeric'
+    api_key = 'atsk_4ee05808b1af7571784ad8c9d6fd6a5cb690ad6885f9e148575ab7c07ac6ac9ae24daf5d'
     hoi_phone = '+254795448431'
     
     print(f"DEBUG: Attempting to send SMS to {hoi_phone} using user {username}")
