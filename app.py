@@ -1435,5 +1435,54 @@ def send_hoi_sms(message_body):
     except Exception as e:
         print(f"FAILED TO SEND SMS EXCEPTION: {e}")
 
+@app.route('/hoi/download-report-csv')
+def download_filtered_report_csv():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
+    # Grab the filter parameters from the request
+    selected_year = request.args.get('year')
+    selected_term = request.args.get('term')
+    selected_form = request.args.get('form', 'All')
+    selected_stream = request.args.get('stream', 'All')
+    selected_status = request.args.get('status', 'All')
+    
+    # Filter the student records based on the selection
+    query = StudentRecord.query
+    if selected_year:
+        query = query.filter_by(year=selected_year)
+    if selected_term:
+        query = query.filter_by(term=selected_term)
+    if selected_form != 'All':
+        query = query.filter_by(form=selected_form)
+    if selected_stream != 'All':
+        query = query.filter_by(stream=selected_stream)
+    if selected_status != 'All':
+        query = query.filter_by(status=selected_status)
+        
+    filtered_records = query.all()
+
+    # Build the CSV file rows
+    output = []
+    output.append(['Adm No', 'Full Name', 'Form / Grade', 'Stream', 'Gender', 'Status', 'Year', 'Term'])
+    
+    for row in filtered_records:
+        output.append([
+            str(row.adm_no),
+            str(row.full_name),
+            str(row.form),
+            str(row.stream),
+            str(row.gender),
+            str(row.status),
+            str(selected_year or ''),
+            str(selected_term or '')
+        ])
+
+    response = make_response('\n'.join([','.join([f'"{str(cell)}"' for cell in row]) for row in output]))
+    response.headers["Content-Disposition"] = f"attachment; filename=reampulse_report_{selected_term}_{selected_year}.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
 if __name__ == '__main__':
     app.run(debug=True)

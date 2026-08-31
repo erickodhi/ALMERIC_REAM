@@ -138,7 +138,7 @@
                 </div>
             </div>
 
-            <!-- Advanced Filter & Reporting Section -->
+            <!-- Advanced Filter & Reporting Section 
             <div class="content-box">
                 <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
                 <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4">
@@ -191,7 +191,7 @@
                     </div>
                 </form>
 
-                <!-- Filtered Students Result Table -->
+                                                   Filtered Students Result Table 
                 <h5 class="text-muted mb-3"><i class="fas fa-list me-2"></i> Report Results ({{ filtered_report_data|length }} records found)</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped align-middle">
@@ -231,8 +231,127 @@
                         </tbody>
                     </table>
                 </div>
+            </div>-->
+            <!-- Advanced Filter & Reporting Section -->
+            <div class="content-box">
+                <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
+                <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4 d-print-none">
+              <div class="col-md-2">
+               <label class="form-label small fw-bold">Year</label>
+               <select name="year" class="form-select">
+                 {% for y in available_years %}
+                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                 {% endfor %}
+              </select>
             </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-bold">Term</label>
+              <select name="term" class="form-select">
+                <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">Form / Grade</label>
+                <select name="form" class="form-select">
+                <option value="All">All Forms</option>
+                {% for f in form_list %}
+                <option value="{{ f }}" {% if selected_form == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+               </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-bold">Stream</label>
+              <select name="stream" class="form-select">
+                <option value="All">All Streams</option>
+                <option value="East" {% if selected_stream == 'East' %}selected{% endif %}>East</option>
+                <option value="West" {% if selected_stream == 'West' %}selected{% endif %}>West</option>
+                <option value="North" {% if selected_stream == 'North' %}selected{% endif %}>North</option>
+                <option value="South" {% if selected_stream == 'South' %}selected{% endif %}>South</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+             <label class="form-label small fw-bold">Status</label>
+             <select name="status" class="form-select">
+                <option value="All" {% if selected_status == 'All' %}selected{% endif %}>All Status</option>
+                <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
+                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="Exempted" {% if selected_status == 'Exempted' %}selected{% endif %}>Exempted</option>
+             </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Filter</button>
+        </div>
+    </form>
 
+    <!-- Print & Export Action Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+        <h5 class="text-muted mb-0"><i class="fas fa-list me-2"></i> Report Results ({{ filtered_report_data|length }} records found)</h5>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="fas fa-print me-1"></i> Print Report</button>
+            <a href="{{ url_for('download_filtered_report_csv', **request.args.to_dict()) }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Download CSV</a>
+        </div>
+    </div>
+
+    <!-- Filtered Students Result Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Adm No</th>
+                    <th>Full Name</th>
+                    <th>Form / Grade</th>
+                    <th>Stream</th>
+                    <th>Gender</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in filtered_report_data %}
+                <tr>
+                    <td>{{ row.adm_no }}</td>
+                    <td class="fw-bold">{{ row.full_name }}</td>
+                    <td>{{ row.form }}</td>
+                    <td>{{ row.stream }}</td>
+                    <td>{{ row.gender }}</td>
+                    <td>
+                      {% if row.status == 'Submitted' %}
+                      <span class="badge bg-success">Submitted</span>
+                      {% elif row.status == 'Exempted' or row.status == 'Exempt' %}
+                      <span class="badge bg-warning text-dark">Exempted</span>
+                      {% else %}
+                      <span class="badge bg-danger">Pending</span>
+                      {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">No student records match the selected filter criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    nav, aside, form, .d-print-none {
+        display: none !important;
+    }
+    .content-box {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}
+</style>
             <!-- Form & Stream Side-by-Side Analysis Row -->
             <div class="row g-4 mb-4">
                 <!-- Form / Grade Smart Analysis Table -->
