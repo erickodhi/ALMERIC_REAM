@@ -232,7 +232,7 @@
                     </table>
                 </div>
             </div>-->
-            <!-- Advanced Filter & Reporting Section -->
+            <!-- Advanced Filter & Reporting Section 
 <div id="printable-report-section" class="content-box">
     <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
     <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4 d-print-none">
@@ -265,10 +265,12 @@
             <label class="form-label small fw-bold">Stream</label>
             <select name="stream" class="form-select">
                 <option value="All">All Streams</option>
-                <option value="East" {% if selected_stream == 'East' %}selected{% endif %}>East</option>
-                <option value="West" {% if selected_stream == 'West' %}selected{% endif %}>West</option>
-                <option value="North" {% if selected_stream == 'North' %}selected{% endif %}>North</option>
-                <option value="South" {% if selected_stream == 'South' %}selected{% endif %}>South</option>
+                <option value="Green" {% if selected_stream == 'Green' %}selected{% endif %}>Green</option>
+                <option value="Orange" {% if selected_stream == 'Orange' %}selected{% endif %}>Orange</option>
+                <option value="Red" {% if selected_stream == 'Red' %}selected{% endif %}>Red</option>
+                <option value="Violet" {% if selected_stream == 'Violet' %}selected{% endif %}>Violet</option>
+                <option value="Yellow" {% if selected_stream == 'Yellow' %}selected{% endif %}>Yellow</option>
+                <option value="Blue" {% if selected_stream == 'Blue' %}selected{% endif %}>Blue</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -285,7 +287,7 @@
         </div>
     </form>
 
-    <!-- Printable Header (Visible only when printing) -->
+    Printable Header (Visible only when printing) 
     <div class="d-none d-print-block text-center mb-4">
         <h3 class="fw-bold text-dark">Ream Collection Compliance Report</h3>
         <p class="text-muted mb-0">
@@ -295,7 +297,7 @@
         </p>
     </div>
 
-    <!-- Print & Export Action Toolbar -->
+    Print & Export Action Toolbar 
     <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
         <h5 class="text-muted mb-0"><i class="fas fa-list me-2"></i> Report Results ({{ filtered_report_data|length }} records found)</h5>
         <div class="d-flex gap-2">
@@ -304,7 +306,7 @@
         </div>
     </div>
 
-    <!-- Filtered Students Result Table -->
+     Filtered Students Result Table 
     <div class="table-responsive">
         <table class="table table-bordered table-striped align-middle">
             <thead class="table-dark">
@@ -343,7 +345,199 @@
             </tbody>
         </table>
     </div>
+</div>-->
+<div id="printable-report-section" class="content-box">
+    <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
+    <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4 d-print-none">
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Year</label>
+            <select name="year" class="form-select">
+                {% for y in available_years %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Term</label>
+            <select name="term" class="form-select">
+                <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Form / Grade</label>
+            <select name="form" class="form-select">
+                <option value="All">All Forms</option>
+                {% for f in form_list %}
+                <option value="{{ f }}" {% if selected_form == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Stream</label>
+            <select name="stream" class="form-select">
+                <option value="All">All Streams</option>
+                <option value="Green" {% if selected_stream == 'Green' %}selected{% endif %}>Green</option>
+                <option value="Orange" {% if selected_stream == 'Orange' %}selected{% endif %}>Orange</option>
+                <option value="Red" {% if selected_stream == 'Red' %}selected{% endif %}>Red</option>
+                <option value="Violet" {% if selected_stream == 'Violet' %}selected{% endif %}>Violet</option>
+                <option value="Yellow" {% if selected_stream == 'Yellow' %}selected{% endif %}>Yellow</option>
+                <option value="Blue" {% if selected_stream == 'Blue' %}selected{% endif %}>Blue</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Status</label>
+            <select name="status" class="form-select">
+                <option value="All" {% if selected_status == 'All' %}selected{% endif %}>All Status</option>
+                <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
+                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="Exempted" {% if selected_status == 'Exempted' %}selected{% endif %}>Exempted</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Filter</button>
+        </div>
+    </form>
+
+    <div class="d-none d-print-block text-center mb-4">
+        <h3 class="fw-bold text-dark">Ream Collection Compliance Report</h3>
+        <p class="text-muted mb-0">
+            <strong>Term:</strong> {{ selected_term }} &nbsp;|&nbsp; 
+            <strong>Year:</strong> {{ selected_year }} &nbsp;|&nbsp; 
+            <strong>Status Filter:</strong> {{ selected_status }}
+        </p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+        <h5 class="text-muted mb-0"><i class="fas fa-list me-2"></i> Report Results ({{ filtered_report_data|length }} records found)</h5>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="fas fa-print me-1"></i> Print Report</button>
+            <a href="{{ url_for('download_filtered_report_csv', **request.args.to_dict()) }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Download CSV</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Adm No</th>
+                    <th>Full Name</th>
+                    <th>Form / Grade</th>
+                    <th>Stream</th>
+                    <th>Gender</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="reportTableBody">
+                {% for row in filtered_report_data %}
+                <tr class="report-row">
+                    <td>{{ row.adm_no }}</td>
+                    <td class="fw-bold">{{ row.full_name }}</td>
+                    <td>{{ row.form }}</td>
+                    <td>{{ row.stream }}</td>
+                    <td>{{ row.gender }}</td>
+                    <td>
+                      {% if row.status == 'Submitted' %}
+                      <span class="badge bg-success">Submitted</span>
+                      {% elif row.status == 'Exempted' or row.status == 'Exempt' %}
+                      <span class="badge bg-warning text-dark">Exempted</span>
+                      {% else %}
+                      <span class="badge bg-danger">Pending</span>
+                      {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="no-records-row">
+                    <td colspan="6" class="text-center text-muted py-3">No student records match the selected filter criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3 d-print-none" id="paginationControls" style="display: none;">
+        <span class="text-muted small" id="pageInfo">Showing page 1 of 1</span>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="prevPageBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left me-1"></i> Previous</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="nextPageBtn" onclick="changePage(1)">Next <i class="fas fa-chevron-right ms-1"></i></button>
+        </div>
+    </div>
 </div>
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printable-report-section, #printable-report-section * {
+        visibility: visible;
+    }
+    #printable-report-section {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+    #paginationControls {
+        display: none !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const rowsPerPage = 5;
+    const tableBody = document.getElementById("reportTableBody");
+    const rows = Array.from(tableBody.getElementsByClassName("report-row"));
+    const paginationControls = document.getElementById("paginationControls");
+    const pageInfo = document.getElementById("pageInfo");
+    const prevBtn = document.getElementById("prevPageBtn");
+    const nextBtn = document.getElementById("nextPageBtn");
+
+    if (rows.length === 0) {
+        paginationControls.style.display = "none";
+        return;
+    }
+
+    let currentPage = 1;
+    const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+    function displayPage(page) {
+        currentPage = page;
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? "" : "none";
+        });
+
+        pageInfo.textContent = `Showing page ${currentPage} of ${totalPages} (${rows.length} total records)`;
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+        
+        if (totalPages <= 1) {
+            paginationControls.style.display = "none";
+        } else {
+            paginationControls.style.display = "flex";
+        }
+    }
+
+    window.changePage = function (direction) {
+        const newPage = currentPage + direction;
+        if (newPage >= 1 && newPage <= totalPages) {
+            displayPage(newPage);
+        }
+    };
+
+    displayPage(1);
+});
+</script>
 
 <style>
 @media print {
