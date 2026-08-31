@@ -2,7 +2,7 @@ import csv
 import io
 import os
 import math
-import AfricasTalking
+import africastalking
 from datetime import timedelta
 from flask import (
     Flask,
@@ -1416,31 +1416,14 @@ def send_hoi_sms(message_body):
     username = os.environ.get('AT_USERNAME', 'sandbox')
     api_key = os.environ.get('AT_API_KEY', 'your_api_key')
     hoi_phone = os.environ.get('HOI_PHONE_NUMBER')
-    
+
     if not hoi_phone or not api_key:
         print("SMS configuration missing: HOI phone or API key not set.")
         return
 
-    AfricasTalking.initialize(username, api_key)
-    sms = AfricasTalking.SMS
-
-    try:
-        response = sms.send(message_body, [hoi_phone])
-        print("SMS sent successfully:", response)
-    except Exception as e:
-        print(f"Failed to send SMS: {e}")
-
-def send_hoi_sms(message_body):
-    username = os.environ.get('AT_USERNAME', 'sandbox')
-    api_key = os.environ.get('AT_API_KEY', 'your_api_key')
-    hoi_phone = os.environ.get('HOI_PHONE_NUMBER')
-    
-    if not hoi_phone or not api_key:
-        print("SMS configuration missing: HOI phone or API key not set.")
-        return
-
-    AfricasTalking.initialize(username, api_key)
-    sms = AfricasTalking.SMS
+    # Use lowercase africastalking here:
+    africastalking.initialize(username, api_key)
+    sms = africastalking.SMS
 
     try:
         response = sms.send(message_body, [hoi_phone])
