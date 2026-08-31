@@ -32,7 +32,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
 def make_session_permanent():
     session.permanent = True
     session.modified = True
-
+"""
 db.init_app(app)
 with app.app_context():
     db.create_all()
@@ -48,7 +48,23 @@ with app.app_context():
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin account created: username 'admin' with password 'adminpassword123'")
-
+"""
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+    
+    # Auto-seed initial admin account if no staff users exist
+    if not StaffUser.query.first():
+        production_admin_password = os.environ.get('ADMIN_PASSWORD', 'adminpassword123')
+        admin_user = StaffUser(
+            username='admin',
+            full_name='System Administrator',
+            password=production_admin_password,
+            role='Admin'
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Default admin account created successfully.")
 def log_audit(action_type, details, target="System"):
     """Helper function to anchor audit logs directly to the verified database user record."""
     try:
