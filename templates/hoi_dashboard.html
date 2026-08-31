@@ -233,54 +233,54 @@
                 </div>
             </div>-->
             <!-- Advanced Filter & Reporting Section -->
-            <div class="content-box">
-                <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
-                <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4 d-print-none">
-              <div class="col-md-2">
-               <label class="form-label small fw-bold">Year</label>
-               <select name="year" class="form-select">
-                 {% for y in available_years %}
-                 <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
-                 {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small fw-bold">Term</label>
-              <select name="term" class="form-select">
+<div id="printable-report-section" class="content-box">
+    <h4 class="mb-3 text-secondary"><i class="fas fa-filter me-2"></i> Advanced Report Generator & Filter</h4>
+    <form method="GET" action="{{ url_for('hoi_dashboard') }}" class="row g-3 mb-4 d-print-none">
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Year</label>
+            <select name="year" class="form-select">
+                {% for y in available_years %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Term</label>
+            <select name="term" class="form-select">
                 <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
                 <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
                 <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-bold">Form / Grade</label>
-                <select name="form" class="form-select">
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Form / Grade</label>
+            <select name="form" class="form-select">
                 <option value="All">All Forms</option>
                 {% for f in form_list %}
                 <option value="{{ f }}" {% if selected_form == f %}selected{% endif %}>{{ f }}</option>
                 {% endfor %}
-               </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small fw-bold">Stream</label>
-              <select name="stream" class="form-select">
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Stream</label>
+            <select name="stream" class="form-select">
                 <option value="All">All Streams</option>
                 <option value="East" {% if selected_stream == 'East' %}selected{% endif %}>East</option>
                 <option value="West" {% if selected_stream == 'West' %}selected{% endif %}>West</option>
                 <option value="North" {% if selected_stream == 'North' %}selected{% endif %}>North</option>
                 <option value="South" {% if selected_stream == 'South' %}selected{% endif %}>South</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-             <label class="form-label small fw-bold">Status</label>
-             <select name="status" class="form-select">
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Status</label>
+            <select name="status" class="form-select">
                 <option value="All" {% if selected_status == 'All' %}selected{% endif %}>All Status</option>
                 <option value="Submitted" {% if selected_status == 'Submitted' %}selected{% endif %}>Submitted</option>
                 <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
                 <option value="Exempted" {% if selected_status == 'Exempted' %}selected{% endif %}>Exempted</option>
-             </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
             <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Filter</button>
         </div>
     </form>
@@ -334,6 +334,31 @@
         </table>
     </div>
 </div>
+
+<style>
+@media print {
+    /* Hide everything on the body by default during print */
+    body * {
+        visibility: hidden;
+    }
+    /* Make only the targeted report section and its contents visible */
+    #printable-report-section, #printable-report-section * {
+        visibility: visible;
+    }
+    /* Position the report section at the very top left of the printed page */
+    #printable-report-section {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+}
+</style>
 
 <style>
 @media print {
