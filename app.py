@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import math
+import AfricasTalking
 from datetime import timedelta
 from flask import (
     Flask,
@@ -1132,7 +1133,7 @@ def exam_dashboard():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
     return redirect(url_for('exam_office'))
-
+"""
 @app.route('/examination-office', methods=['GET', 'POST'])
 def exam_office():
     if 'user_id' not in session:
@@ -1240,7 +1241,126 @@ def exam_office():
         exam_requests=exam_requests,
         disbursements=disbursements
     )
+"""
+@app.route('/examination-office', methods=['GET', 'POST'])
+def exam_office():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
 
+    total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
+    total_store_sheets = total_reams_collected * 500
+    total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
+    available_store_sheets = max(0, total_store_sheets - total_sheets_requested)
+
+    total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
+    total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
+    active_loose_sheets = total_loose_generated - total_loose_disbursed
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if total_reams_collected <= 0:
+            flash("STORE STATUS ERROR: NO REAM COLLECTED YET. Please wait for collection desk.", "error")
+            return redirect(url_for('exam_office'))
+
+        # === HANDLER 1: REQUEST REAMS ===
+        if action == 'request_reams':
+            if active_loose_sheets > 20:
+                flash("REQUEST DENIED: ACTIVE LOOSE LEFTOVER SHEETS EXCEED 20. You must disburse loose sheets first.", "error")
+                return redirect(url_for('exam_office'))
+
+            subject = request.form.get('subject')
+            purpose = request.form.get('purpose')
+            target_form = request.form.get('target_form')
+            stream = request.form.get('stream')
+            num_students = int(request.form.get('num_students'))
+            sheets_per_student = int(request.form.get('sheets_per_student'))
+
+            raw_needed = num_students * sheets_per_student
+            padding = 60 if raw_needed <= 250 else 50
+            total_needed_with_padding = raw_needed + padding
+
+            if total_needed_with_padding > available_store_sheets:
+                flash("REQUESTING MORE THAN IS AVAILABLE IN THE STORE.", "error")
+                return redirect(url_for('exam_office'))
+
+            reams_to_take = math.ceil(total_needed_with_padding / 500)
+            loose_leftover = (reams_to_take * 500) - total_needed_with_padding
+
+            new_req = ExamRequest(
+                subject=subject,
+                purpose=purpose,
+                target_form=target_form,
+                stream=stream,
+                num_students=num_students,
+                sheets_per_student=sheets_per_student,
+                total_sheets_needed=total_needed_with_padding,
+                padding_sheets=padding,
+                loose_leftover_sheets=loose_leftover,
+                reams_allocated=reams_to_take
+            )
+            db.session.add(new_req)
+            db.session.commit()
+            
+            # --- SMS NOTIFICATION TRIGGER FOR HOI ---
+            current_remaining_reams = (available_store_sheets - total_needed_with_padding) // 500
+            sms_text = (
+                f"EXAM REQUEST ALERT:\n"
+                f"Subject: {subject}\n"
+                f"Purpose: {purpose} ({target_form} {stream})\n"
+                f"Reams Taken: {reams_to_take} ({total_needed_with_padding} sheets)\n"
+                f"Store Left: {max(0, current_remaining_reams)} reams"
+            )
+            send_hoi_sms(sms_text)
+            # ----------------------------------------
+
+            log_audit('EXAM_REQUEST', f'Requested {total_needed_with_padding} sheets for exam: {subject} ({target_form} {stream})', target=subject)
+            flash("Exam ream request successfully submitted.", "success")
+            return redirect(url_for('exam_office'))
+
+        # === HANDLER 2: DISBURSE LOOSE SHEETS ===
+        if action == 'disburse_sheets':
+            subject = request.form.get('subject')
+            purpose = request.form.get('purpose')
+            target_form = request.form.get('target_form')
+            stream = request.form.get('stream')
+            num_students = int(request.form.get('num_students'))
+            sheets_per_student = int(request.form.get('sheets_per_student'))
+            disbursed_count = num_students * sheets_per_student
+
+            if disbursed_count > active_loose_sheets:
+                flash("ERROR: CANNOT DISBURSE MORE THAN AVAILABLE ACTIVE LOOSE SHEETS.", "error")
+                return redirect(url_for('exam_office'))
+
+            new_disbursement = SheetDisbursement(
+                subject=subject,
+                purpose=purpose,
+                target_form=target_form,
+                stream=stream,
+                num_students=num_students,
+                sheets_per_student=sheets_per_student,
+                disbursed_sheets=disbursed_count
+            )
+            db.session.add(new_disbursement)
+            db.session.commit()
+            log_audit('LOOSE_DISBURSEMENT', f'Disbursed {disbursed_count} loose sheets for: {subject} ({target_form} {stream})', target=subject)
+            flash("Loose sheets successfully disbursed.", "success")
+            return redirect(url_for('exam_office'))
+
+    exam_requests = ExamRequest.query.order_by(ExamRequest.id.desc()).all()
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.id.desc()).all()
+
+    return render_template(
+        'examination_office.html',
+        role="Examination Office",
+        username=session.get('username'),
+        total_store_sheets=available_store_sheets,
+        available_store_sheets=available_store_sheets,
+        active_loose_sheets=active_loose_sheets,
+        exam_requests=exam_requests,
+        disbursements=disbursements
+    )
 @app.route('/admin/audit-logs')
 def audit_logs():
     if 'user_id' not in session:
@@ -1291,6 +1411,42 @@ def audit_logs():
         
    # logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(200).all()
    # return render_template('audit_logs.html', audit_logs=logs)
+
+def send_hoi_sms(message_body):
+    username = os.environ.get('AT_USERNAME', 'sandbox')
+    api_key = os.environ.get('AT_API_KEY', 'your_api_key')
+    hoi_phone = os.environ.get('HOI_PHONE_NUMBER')
+    
+    if not hoi_phone or not api_key:
+        print("SMS configuration missing: HOI phone or API key not set.")
+        return
+
+    AfricasTalking.initialize(username, api_key)
+    sms = AfricasTalking.SMS
+
+    try:
+        response = sms.send(message_body, [hoi_phone])
+        print("SMS sent successfully:", response)
+    except Exception as e:
+        print(f"Failed to send SMS: {e}")
+
+def send_hoi_sms(message_body):
+    username = os.environ.get('AT_USERNAME', 'sandbox')
+    api_key = os.environ.get('AT_API_KEY', 'your_api_key')
+    hoi_phone = os.environ.get('HOI_PHONE_NUMBER')
+    
+    if not hoi_phone or not api_key:
+        print("SMS configuration missing: HOI phone or API key not set.")
+        return
+
+    AfricasTalking.initialize(username, api_key)
+    sms = AfricasTalking.SMS
+
+    try:
+        response = sms.send(message_body, [hoi_phone])
+        print("SMS sent successfully:", response)
+    except Exception as e:
+        print(f"Failed to send SMS: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)

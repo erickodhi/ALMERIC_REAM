@@ -2,3 +2,4 @@ Flask-Login
 Flask==3.1.0
 Flask-SQLAlchemy==3.1.1
 gunicorn==22.0.0
+AfricasTalking
