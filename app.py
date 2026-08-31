@@ -666,6 +666,183 @@ def hoi_dashboard():
     # Expected reams count is strictly based on students active in or before this term
     expected_reams_count = len(active_students)
 
+    # 2. School-wide Collection Rate Calculation for Active Term/Year (Moved up to calculate term collection first)
+    term_records = ReamRecord.query.filter(
+        db.func.lower(ReamRecord.term) == selected_term.lower(),
+        ReamRecord.year == str(selected_year)
+    ).all()
+    
+    submitted_student_ids = {r.student_id for r in term_records}
+    total_submitted_count = len(submitted_student_ids)
+    
+    # Calculate reams collected strictly for this specific term and year
+    total_reams_collected = sum(r.reams_count for r in term_records)
+
+    # General store metrics (Physical store metrics remain cumulative across the year)
+    all_year_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
+    total_store_sheets = all_year_reams_collected * 500
+    total_sheets_requested = db.session.query(db.func.sum(ExamRequest.total_sheets_needed)).scalar() or 0
+    remaining_sheets = max(0, total_store_sheets - total_sheets_requested)
+    available_store_reams = remaining_sheets // 500
+
+    total_loose_generated = db.session.query(db.func.sum(ExamRequest.loose_leftover_sheets)).scalar() or 0
+    total_loose_disbursed = db.session.query(db.func.sum(SheetDisbursement.disbursed_sheets)).scalar() or 0
+    active_loose_sheets = total_loose_generated - total_loose_disbursed
+
+    # Collection percentage based on expected (non-exempt) student pool
+    school_collection_percentage = round((total_submitted_count / expected_reams_count * 100), 1) if expected_reams_count > 0 else 0.0
+
+    # 3. Form / Grade Analysis Data (Exemptions respected)
+    all_forms = db.session.query(Student.form.distinct()).filter_by(year=selected_year).all()
+    form_list = [f[0] for f in all_forms if f[0]]
+    form_analysis = []
+
+    for f_name in sorted(form_list):
+        f_students = [s for s in all_year_students if s.form == f_name]
+        f_active = [s for s in f_students if s.id not in exempted_student_ids]
+        f_total = len(f_active) # Denominator excludes exempt students
+        f_submitted = sum(1 for s in f_active if s.id in submitted_student_ids)
+        f_pct = round((f_submitted / f_total * 100), 1) if f_total > 0 else 0.0
+        form_analysis.append({
+            'form': f_name,
+            'total': f_total,
+            'submitted': f_submitted,
+            'percentage': f_pct
+        })
+
+    # 4. Stream Analysis Data (Exemptions respected)
+    stream_analysis = []
+    streams_query = db.session.query(Student.form, Student.stream).filter_by(year=selected_year).distinct().all()
+    unique_form_streams = sorted(list(set(streams_query)))
+
+    for f_name, s_name in unique_form_streams:
+        if not f_name or not s_name:
+            continue
+        fs_students = [s for s in all_year_students if s.form == f_name and s.stream == s_name]
+        fs_active = [s for s in fs_students if s.id not in exempted_student_ids]
+        fs_total = len(fs_active)
+        fs_submitted = sum(1 for s in fs_active if s.id in submitted_student_ids)
+        fs_pct = round((fs_submitted / fs_total * 100), 1) if fs_total > 0 else 0.0
+        stream_analysis.append({
+            'form': f_name,
+            'stream': s_name,
+            'total': fs_total,
+            'submitted': fs_submitted,
+            'percentage': fs_pct
+        })
+
+    # 5. Filtered Student Report Query
+    student_query = Student.query.filter_by(year=selected_year)
+    if selected_form != 'All':
+        student_query = student_query.filter_by(form=selected_form)
+    if selected_stream != 'All':
+        student_query = student_query.filter_by(stream=selected_stream)
+    
+    filtered_students_raw = student_query.order_by(Student.form, Student.stream, Student.adm_no).all()
+    
+    filtered_report_data = []
+    for s in filtered_students_raw:
+        is_exempt = s.id in exempted_student_ids
+        is_submitted = s.id in submitted_student_ids
+        
+        if is_exempt:
+            status_str = 'Exempted'
+        else:
+            status_str = 'Submitted' if is_submitted else 'Pending'
+        
+        if selected_status == 'Submitted' and not is_submitted:
+            continue
+        if selected_status == 'Pending' and (is_submitted or is_exempt):
+            continue
+        if selected_status in ['Exempted', 'Exempt'] and not is_exempt:
+            continue
+            
+        filtered_report_data.append({
+            'adm_no': s.adm_no,
+            'full_name': s.full_name,
+            'form': s.form,
+            'stream': s.stream,
+            'gender': s.gender,
+            'status': status_str
+        })
+
+    year_results = db.session.query(Student.year.distinct()).all()
+    available_years = sorted(list(set([y[0] for y in year_results]))) if year_results else ['2026']
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
+    disbursements = SheetDisbursement.query.order_by(SheetDisbursement.created_at.desc()).all()
+    
+    return render_template(
+        'hoi_dashboard.html',
+        role="Head of Institution",
+        username=session.get('username'),
+        selected_year=selected_year,
+        selected_term=selected_term,
+        selected_form=selected_form,
+        selected_stream=selected_stream,
+        selected_status=selected_status,
+        available_years=available_years,
+        total_students=total_students,
+        expected_reams_count=expected_reams_count,
+        exempted_count=exempted_count,
+        total_reams_collected=total_reams_collected,
+        available_store_reams=available_store_reams,
+        active_loose_sheets=active_loose_sheets,
+        total_submitted_count=total_submitted_count,
+        school_collection_percentage=school_collection_percentage,
+        form_analysis=form_analysis,
+        stream_analysis=stream_analysis,
+        filtered_report_data=filtered_report_data,
+        form_list=form_list,
+        logs=logs,                    
+        disbursements=disbursements
+    )
+"""
+@app.route('/portal/hoi', methods=['GET', 'POST'])
+def hoi_dashboard():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
+    # Safely fetch or auto-create global system settings
+    setting = SystemSetting.query.first()
+    if not setting:
+        setting = SystemSetting(active_year='2026', active_term='Term 1')
+        db.session.add(setting)
+        db.session.commit()
+
+    default_year = setting.active_year
+    default_term = setting.active_term
+
+    # Filter parameters from GET request
+    selected_year = request.args.get('year', default_year)
+    selected_term = request.args.get('term', default_term)
+    selected_form = request.args.get('form', 'All')
+    selected_stream = request.args.get('stream', 'All')
+    selected_status = request.args.get('status', 'All')
+
+    # Term map for exemption calculations
+    term_map = {'Term 1': 1, 'Term 2': 2, 'Term 3': 3}
+    current_term_num = term_map.get(selected_term, 1)
+
+    # Fetch all students for the selected year and classify active vs exempted
+    all_year_students = Student.query.filter_by(year=selected_year).all()
+    total_students = len(all_year_students)
+
+    active_students = []
+    exempted_count = 0
+    exempted_student_ids = set()
+
+    for s in all_year_students:
+        s_term_num = term_map.get(s.enrollment_term, 1)
+        if current_term_num < s_term_num:
+            exempted_count += 1
+            exempted_student_ids.add(s.id)
+        else:
+            active_students.append(s)
+
+    # Expected reams count is strictly based on students active in or before this term
+    expected_reams_count = len(active_students)
+
     # General store metrics
     total_reams_collected = db.session.query(db.func.sum(ReamRecord.reams_count)).scalar() or 0
     total_store_sheets = total_reams_collected * 500
@@ -793,7 +970,7 @@ def hoi_dashboard():
         logs=logs,                       
         disbursements=disbursements
     )
-
+"""
 """
 @app.route('/portal/ream', methods=['GET', 'POST'])
 def ream_dashboard():
