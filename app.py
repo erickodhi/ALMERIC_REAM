@@ -1412,16 +1412,16 @@ def audit_logs():
    # logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(200).all()
    # return render_template('audit_logs.html', audit_logs=logs)
 
+import africastalking
+
 def send_hoi_sms(message_body):
-    username = os.environ.get('AT_USERNAME', 'sandbox')
-    api_key = os.environ.get('AT_API_KEY', 'atsk_241839503f3ef8b1d5455994ef868aa0abb57967ff38bf707ccee4c6197af437af700cff')
-    hoi_phone = os.environ.get('+254795448431')
+    # Hardcoded directly to bypass Render environment variable lag
+    username = 'sandbox'
+    api_key = 'atsk_241839503f3ef8b1d5455994ef868aa0abb57967ff38bf707ccee4c6197af437af700cff'
+    hoi_phone = '+254795448431'
+    
+    print(f"DEBUG: Attempting to send SMS to {hoi_phone} using user {username}")
 
-    if not hoi_phone or not api_key:
-        print("SMS configuration missing: HOI phone or API key not set.")
-        return
-
-    # Use lowercase africastalking here:
     africastalking.initialize(username, api_key)
     sms = africastalking.SMS
 
@@ -1429,7 +1429,7 @@ def send_hoi_sms(message_body):
         response = sms.send(message_body, [hoi_phone])
         print("SMS sent successfully:", response)
     except Exception as e:
-        print(f"Failed to send SMS: {e}")
+        print(f"FAILED TO SEND SMS EXCEPTION: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)
